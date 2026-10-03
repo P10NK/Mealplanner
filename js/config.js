@@ -4,5 +4,5 @@
  * Leave it empty to use estimated prices only.
  */
 window.MP_CONFIG = {
-  priceApi: '',
+  priceApi: 'https://mealplanner.leonardellipayton.workers.dev',
 };
