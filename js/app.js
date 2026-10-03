@@ -261,7 +261,8 @@
             : `No ${meal.label.toLowerCase()} matches. Try fewer styles or more appliances.`
         )
       );
-      appendOptions(select, options, recipeLabel);
+      const rush = P.isRushSlot(day, meal.id);
+      appendOptions(select, options, recipeLabel, rush);
       if (current && !options.includes(current)) {
         select.append(
           h('optgroup', { label: "Doesn't fit your current plan" }, h('option', { value: current.id }, recipeLabel(current)))
@@ -281,7 +282,9 @@
             { class: 'chips' },
             h('span', { class: 'chip cost' }, `${P.money(P.recipeCost(current) * servings())}${servings() > 1 ? ` for ${servings()}` : ''}`),
             current.ready ? h('span', { class: 'chip fit' }, '📦 Store-bought') : null,
+            rush && P.isQuickGrab(current) ? h('span', { class: 'chip fit' }, '⚡ Quick grab') : null,
             h('span', { class: 'chip' }, `⏱ ${current.time} min`),
+            rush && !P.isQuickGrab(current) ? h('span', { class: 'chip warn' }, 'Slow for a weekday morning') : null,
             fits ? null : h('span', { class: 'chip warn' }, "Doesn't match your style or appliances")
           ),
           h(
@@ -302,7 +305,7 @@
         h(
           'div',
           { class: 'meal-main' },
-          h('label', { class: 'meal-label', for: `slot-${meal.id}` }, meal.label),
+          h('label', { class: 'meal-label', for: `slot-${meal.id}` }, meal.label, rush ? h('span', { class: 'rush-tag' }, ' · weekday, quick grabs first') : null),
           select,
           details
         )
@@ -325,13 +328,19 @@
   }
 
   // Grab-and-go items first, then things you cook, so the long list is easy to scan.
-  function appendOptions(select, options, label) {
-    const ready = options.filter((r) => r.ready);
-    const cook = options.filter((r) => !r.ready);
+  // On weekday mornings, quick grabs come first instead.
+  function appendOptions(select, options, label, rush) {
     const add = (title, list) => {
       if (!list.length) return;
       select.append(h('optgroup', { label: title }, list.map((rec) => h('option', { value: rec.id }, label(rec)))));
     };
+    if (rush) {
+      add(`Quick grab (${P.QUICK_GRAB_MINUTES} min or less)`, options.filter(P.isQuickGrab));
+      add('Takes longer', options.filter((r) => !P.isQuickGrab(r)));
+      return;
+    }
+    const ready = options.filter((r) => r.ready);
+    const cook = options.filter((r) => !r.ready);
     add('Grab & go', ready);
     add('Cook it yourself', cook);
   }

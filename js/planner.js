@@ -18,6 +18,18 @@
 
   const MAIN_MEALS = ['breakfast', 'lunch', 'dinner'];
 
+  // Weekday mornings are rushed, so those breakfasts lean on things you can grab in 5 minutes or less.
+  const QUICK_GRAB_MINUTES = 5;
+  const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+
+  function isQuickGrab(recipe) {
+    return !!recipe && recipe.time <= QUICK_GRAB_MINUTES;
+  }
+
+  function isRushSlot(day, meal) {
+    return meal === 'breakfast' && WEEKDAYS.includes(day);
+  }
+
   function getRecipe(id) {
     return id ? RECIPE_BY_ID[id] || null : null;
   }
@@ -236,7 +248,8 @@
     let spent = plannedRecipes(next).reduce((s, rec) => s + recipeCost(rec) * servings, 0);
 
     slots.forEach(([day, meal], i) => {
-      const options = recipeOptions(meal, prefs);
+      let options = recipeOptions(meal, prefs);
+      if (isRushSlot(day, meal) && options.some(isQuickGrab)) options = options.filter(isQuickGrab);
       if (!options.length) return;
       const remainingSlots = slots.length - i;
       const target = budget > 0 ? ((budget * 0.92 - spent) / remainingSlots) : Infinity;
@@ -439,6 +452,10 @@
 
   const api = {
     MAIN_MEALS,
+    QUICK_GRAB_MINUTES,
+    WEEKDAYS,
+    isQuickGrab,
+    isRushSlot,
     getRecipe,
     recipeCost,
     recipeFlags,

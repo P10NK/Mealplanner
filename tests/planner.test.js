@@ -245,3 +245,22 @@ test('ready to eat style keeps only store-bought items', () => {
   plan.Monday.breakfast = 'rb-belvita';
   assert.equal(P.buildShoppingList(plan, 1)[0].cat, 'Ready-to-Eat');
 });
+
+test('weekday breakfasts are quick grabs when auto-filled', () => {
+  const D2 = D;
+  let seed = 7;
+  const rng = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  const prefs = { styles: ['balanced'], appliances: D2.APPLIANCES.map((a) => a.id), budget: 0, servings: 1 };
+  const plan = P.autofill(P.emptyPlan(), prefs, rng);
+  for (const day of P.WEEKDAYS) assert.ok(P.isQuickGrab(P.getRecipe(plan[day].breakfast)), `${day} ${plan[day].breakfast}`);
+  assert.ok(P.isRushSlot('Monday', 'breakfast'));
+  assert.ok(!P.isRushSlot('Saturday', 'breakfast'));
+  assert.ok(!P.isRushSlot('Monday', 'dinner'));
+});
+
+test('every grab-and-go item names a brand-led product and has plenty of options', () => {
+  for (const meal of D.MEALS) {
+    const n = D.RECIPES.filter((r) => r.ready && r.meal === meal.id).length;
+    assert.ok(n >= 12, `${meal.id} has only ${n} grab-and-go options`);
+  }
+});

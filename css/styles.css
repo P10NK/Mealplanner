@@ -1584,3 +1584,10 @@ input[type='checkbox'] {
     break-inside: avoid;
   }
 }
+
+.rush-tag {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 600;
+  color: var(--muted);
+}
