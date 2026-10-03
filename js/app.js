@@ -187,6 +187,11 @@
 
     const days = D.DAYS.map((d) => P.dayTotals(state.plan, d)).filter((t) => t.meals);
     const avg = (k) => (days.length ? Math.round(days.reduce((s, t) => s + t[k], 0) / days.length) : 0);
+    // Averages cover only the days with meals picked, and the title says how many.
+    $('avg-title').textContent =
+      days.length && days.length < 7
+        ? `Daily average per person (${days.length} planned day${days.length === 1 ? '' : 's'})`
+        : 'Daily average per person';
     const stat = (label, value, unit) => h('div', null, h('dt', null, label), h('dd', null, value, unit ? h('small', null, ` ${unit}`) : null));
     $('avg-grid').replaceChildren(
       stat('Calories', days.length ? avg('kcal') : '–', 'kcal'),
