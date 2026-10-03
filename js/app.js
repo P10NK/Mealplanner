@@ -298,6 +298,7 @@
             'div',
             { class: 'chips' },
             h('span', { class: 'chip cost' }, `${P.money(P.recipeCost(current) * servings())}${servings() > 1 ? ` for ${servings()}` : ''}`),
+            current.ready ? h('span', { class: 'chip fit' }, '📦 Store-bought') : null,
             h('span', { class: 'chip' }, `⏱ ${current.time} min`),
             h('span', { class: 'chip' }, `🔥 ${current.kcal} kcal`),
             fits ? null : h('span', { class: 'chip warn' }, "Doesn't match your style or appliances")
@@ -481,6 +482,7 @@
           h(
             'div',
             { class: 'chips' },
+            rec.ready ? h('span', { class: 'chip fit' }, '📦 Store-bought') : null,
             h('span', { class: 'chip' }, `⏱ ${rec.time} min`),
             h('span', { class: 'chip' }, `🔥 ${rec.kcal} kcal`),
             h('span', { class: 'chip' }, `${rec.protein}g protein`),

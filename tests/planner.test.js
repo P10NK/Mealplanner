@@ -229,3 +229,19 @@ test('single items read naturally in recipes', () => {
   assert.equal(by.onion, 'Onion');
   assert.equal(P.recipeIngredients(P.getRecipe('b-pb-toast'), 2).find((l) => l.key === 'banana').name, 'Bananas');
 });
+
+test('ready to eat style keeps only store-bought items', () => {
+  assert.ok(P.matchesStyle(P.getRecipe('rl-hot-pocket'), 'readyMade'));
+  assert.ok(P.matchesStyle(P.getRecipe('rb-belvita'), 'readyMade'));
+  assert.ok(!P.matchesStyle(P.getRecipe('b-avocado-toast'), 'readyMade'));
+  assert.ok(!P.matchesStyle(P.getRecipe('rl-hot-pocket-apple'), 'heartHealthy'));
+  const prefs = { styles: ['readyMade'], appliances: [] };
+  for (const meal of D.MEALS) {
+    const opts = P.recipeOptions(meal.id || meal, prefs);
+    assert.ok(opts.length >= 1, `no ready-made ${meal.id || meal} without appliances`);
+    for (const r of opts) assert.ok(r.ready, r.id);
+  }
+  const plan = P.emptyPlan();
+  plan.Monday.breakfast = 'rb-belvita';
+  assert.equal(P.buildShoppingList(plan, 1)[0].cat, 'Ready-to-Eat');
+});

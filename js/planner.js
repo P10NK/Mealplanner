@@ -76,6 +76,8 @@
         return !f.gluten;
       case 'heartHealthy':
         return !f.heavy && recipe.fiber >= lim;
+      case 'readyMade':
+        return !!recipe.ready;
       case 'mediterranean':
         return !!recipe.med;
       case 'quick':
