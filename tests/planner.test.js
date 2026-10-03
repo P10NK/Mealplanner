@@ -186,3 +186,21 @@ test('store tiers adjust the estimated total', () => {
   );
   assert.equal(stores[0].tier, 'premium');
 });
+
+test('dayTotals adds up a day per person', () => {
+  const plan = P.emptyPlan();
+  plan.Monday.breakfast = 'b-pb-toast';
+  plan.Monday.snack = 's-banana';
+  const t = P.dayTotals(plan, 'Monday');
+  assert.equal(t.kcal, 450 + 105);
+  assert.equal(t.protein, 16);
+  assert.equal(t.meals, 2);
+  assert.equal(P.dayTotals(plan, 'Tuesday').kcal, 0);
+});
+
+test('every recipe, style and appliance has a picture', () => {
+  for (const r of D.RECIPES) assert.ok(r.icon, r.id);
+  for (const s of D.STYLES) assert.ok(s.icon, s.id);
+  for (const a of D.APPLIANCES) assert.ok(a.icon, a.id);
+  for (const c of D.CATEGORIES) assert.ok(D.CATEGORY_ICONS[c], c);
+});

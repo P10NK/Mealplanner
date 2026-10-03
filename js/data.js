@@ -412,6 +412,123 @@
     r('s-cheese-walnuts', 'Cheese & walnuts', 'snack', 1, [], [['cheddar', 0.125], ['walnuts', 0.5]], [160, 6, 2, 1]),
   ];
 
+
+  // Picture for each recipe, shown on cards and in the week grid.
+  const RECIPE_ICONS = {
+    'b-parfait': '🍨',
+    'b-shakshuka': '🍳',
+    'b-overnight-oats': '🥣',
+    'b-veggie-scramble': '🍳',
+    'b-egg-muffins': '🧁',
+    'b-protein-smoothie': '🥤',
+    'b-avocado-toast': '🥑',
+    'b-pb-toast': '🍞',
+    'b-cottage-bowl': '🫐',
+    'b-burrito': '🌯',
+    'b-mug-omelet': '☕',
+    'b-tofu-scramble': '🥬',
+    'b-baked-oat-cups': '🧁',
+    'b-apple-oatmeal': '🍎',
+    'b-egg-muffin-sandwich': '🥯',
+    'b-chia-pudding': '🍮',
+    'b-sweet-potato-hash': '🍠',
+    'b-green-smoothie-bowl': '🥝',
+    'l-turkey-wrap': '🌯',
+    'l-chickpea-salad': '🥗',
+    'l-tuna-lettuce-wraps': '🐟',
+    'l-burrito-bowl': '🍚',
+    'l-lentil-soup': '🍲',
+    'l-quinoa-bowl': '🥙',
+    'l-quesadilla': '🫓',
+    'l-egg-salad': '🥪',
+    'l-chicken-caesar': '🥗',
+    'l-hummus-pita': '🥙',
+    'l-turkey-chili': '🌶️',
+    'l-stuffed-sweet-potato': '🍠',
+    'l-cobb-salad': '🥗',
+    'l-tomato-soup-grilled-cheese': '🍅',
+    'l-shrimp-avocado-salad': '🦐',
+    'l-tuna-pasta-salad': '🍝',
+    'l-edamame-bowl': '🫛',
+    'l-chickpea-smash': '🥪',
+    'd-sheet-pan-chicken': '🍗',
+    'd-baked-salmon': '🐟',
+    'd-turkey-tacos': '🌮',
+    'd-spaghetti': '🍝',
+    'd-sweet-potato-chili': '🌶️',
+    'd-chicken-stir-fry': '🥡',
+    'd-shrimp-zoodles': '🦐',
+    'd-steak-veggies': '🥩',
+    'd-chicken-curry': '🍛',
+    'd-lentil-dal': '🍛',
+    'd-air-fryer-salmon': '🐟',
+    'd-pork-chops': '🍖',
+    'd-fried-rice': '🍚',
+    'd-tofu-stir-fry': '🥦',
+    'd-souvlaki': '🥙',
+    'd-stuffed-peppers': '🫑',
+    'd-beef-broccoli': '🥦',
+    'd-baked-potato': '🥔',
+    'd-chickpea-sheet-pan': '🫑',
+    'd-pasta-primavera': '🍝',
+    'd-bbq-chicken': '🍗',
+    'd-bean-burrito-bowl': '🌯',
+    'd-mezze-plate': '🫒',
+    'd-tuna-chickpea-salad': '🥗',
+    'd-chicken-thighs-broccoli': '🍗',
+    'd-turkey-lettuce-tacos': '🌮',
+    'd-salmon-spinach': '🐟',
+    'd-bunless-burger': '🍔',
+    'd-black-bean-tacos': '🌮',
+    'd-chickpea-curry': '🍛',
+    's-apple-pb': '🍎',
+    's-hummus-veggies': '🥕',
+    's-yogurt-honey': '🍯',
+    's-boiled-eggs': '🥚',
+    's-almonds': '🌰',
+    's-cottage-berries': '🫐',
+    's-roasted-chickpeas': '🫘',
+    's-popcorn': '🍿',
+    's-edamame': '🫛',
+    's-protein-shake': '🥤',
+    's-turkey-rollups': '🧀',
+    's-rice-cakes': '🍘',
+    's-chocolate-berries': '🍫',
+    's-banana': '🍌',
+    's-celery-pb': '🥬',
+    's-energy-bites': '🍪',
+    's-cheese-walnuts': '🧀',
+  };
+  RECIPES.forEach((rec) => {
+    rec.icon = RECIPE_ICONS[rec.id] || '🍽️';
+  });
+
+  const STYLE_ICONS = {
+    balanced: '⚖️', highProtein: '💪', highFiber: '🌾', lowCarb: '🥑', keto: '🥓', moneySaver: '💰', lowCalorie: '🪶',
+    vegetarian: '🥕', vegan: '🌱', pescatarian: '🐟', glutenFree: '🚫', heartHealthy: '❤️', mediterranean: '🫒', quick: '⏱️',
+  };
+  STYLES.forEach((st) => {
+    st.icon = STYLE_ICONS[st.id] || '🍽️';
+  });
+
+  const APPLIANCE_ICONS = {
+    stovetop: '🔥', oven: '♨️', microwave: '📡', airfryer: '🌀', slowcooker: '🍲', instantpot: '⏲️', blender: '🥤',
+    toaster: '🍞', grill: '🍢', ricecooker: '🍚',
+  };
+  APPLIANCES.forEach((a) => {
+    a.icon = APPLIANCE_ICONS[a.id] || '🍳';
+  });
+
+  const MEAL_ICONS = { breakfast: '🌅', lunch: '☀️', dinner: '🌙', snack: '🍏' };
+  MEALS.forEach((m) => {
+    m.icon = MEAL_ICONS[m.id];
+  });
+
+  const CATEGORY_ICONS = {
+    Produce: '🥬', 'Meat & Seafood': '🥩', 'Dairy & Eggs': '🥛', 'Plant Protein': '🫘', 'Bread & Grains': '🍞',
+    'Canned & Dry Goods': '🥫', Frozen: '🧊', 'Nuts, Seeds & Snacks': '🥜', 'Oils, Spices & Condiments': '🧂',
+  };
+
   // Store price tiers, guessed from the store or brand name. Base prices above are "standard".
   const STORE_TIERS = {
     discount: { label: 'Discount', factor: 0.85 },
@@ -431,7 +548,7 @@
     ],
   };
 
-  const data = { STORE_TIERS, TIER_CHAINS, CATEGORIES, WHOLE_UNITS, INGREDIENTS, APPLIANCES, STYLES, MEALS, DAYS, RECIPES };
+  const data = { CATEGORY_ICONS, STORE_TIERS, TIER_CHAINS, CATEGORIES, WHOLE_UNITS, INGREDIENTS, APPLIANCES, STYLES, MEALS, DAYS, RECIPES };
 
   if (typeof module === 'object' && module.exports) {
     module.exports = data;

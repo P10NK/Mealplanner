@@ -144,6 +144,22 @@
     return out;
   }
 
+  // Nutrition per person for one day (snack included when picked).
+  function dayTotals(plan, day) {
+    const t = { kcal: 0, protein: 0, carbs: 0, fiber: 0, cost: 0, meals: 0 };
+    D.MEALS.forEach(({ id }) => {
+      const rec = getRecipe(plan[day] && plan[day][id]);
+      if (!rec) return;
+      t.kcal += rec.kcal;
+      t.protein += rec.protein;
+      t.carbs += rec.carbs;
+      t.fiber += rec.fiber;
+      t.cost += recipeCost(rec);
+      t.meals += 1;
+    });
+    return t;
+  }
+
   function buildShoppingList(plan, servings) {
     const n = Math.max(1, Number(servings) || 1);
     const totals = {};
@@ -411,6 +427,7 @@
     countMainFilled,
     isWeekComplete,
     plannedRecipes,
+    dayTotals,
     buildShoppingList,
     groupBy,
     listTotal,
