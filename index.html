@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Weekly Meal Planner</title>
+    <meta name="description" content="Plan a week of meals around your diet style, kitchen and budget, then build a shopping list for grocery stores near you." />
+    <meta name="theme-color" content="#2f7d4f" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A5%97%3C/text%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="wrap">
+        <h1>Weekly Meal Planner</h1>
+        <p class="tagline">Pick a plan style, fill your week, and get a shopping list for stores near you.</p>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <!-- Step 1: preferences -->
+      <section class="card" id="prefs" aria-labelledby="prefs-title">
+        <h2 id="prefs-title"><span class="step">1</span> Your plan</h2>
+
+        <fieldset>
+          <legend>Meal plan style <span class="hint">Pick one, or combine a few.</span></legend>
+          <div class="chips" id="style-chips"></div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Cooking appliances you have</legend>
+          <div class="checks" id="appliance-checks"></div>
+          <p class="hint">No-cook meals are always available.</p>
+        </fieldset>
+
+        <div class="row">
+          <label class="field">
+            <span>Max budget per week</span>
+            <span class="money-input"><span aria-hidden="true">$</span><input type="number" id="budget" min="0" step="5" inputmode="decimal" /></span>
+          </label>
+          <label class="field">
+            <span>People eating</span>
+            <input type="number" id="servings" min="1" max="12" step="1" inputmode="numeric" />
+          </label>
+        </div>
+      </section>
+
+      <!-- Step 2: week -->
+      <section class="card" id="week" aria-labelledby="week-title">
+        <h2 id="week-title"><span class="step">2</span> Your week</h2>
+
+        <div class="summary">
+          <div class="meter" id="budget-meter">
+            <div class="meter-label"><span id="budget-text"></span><span id="budget-left"></span></div>
+            <div class="meter-track"><div class="meter-fill" id="budget-fill"></div></div>
+          </div>
+          <div class="progress" id="meal-progress"></div>
+        </div>
+
+        <div class="actions">
+          <button type="button" class="btn" id="autofill">Auto-fill empty meals</button>
+          <button type="button" class="btn ghost" id="clear-week">Clear week</button>
+        </div>
+
+        <div class="day-tabs" role="tablist" id="day-tabs" aria-label="Days of the week"></div>
+        <div class="day-panel" id="day-panel" role="tabpanel"></div>
+
+        <h3 class="sub">Week at a glance</h3>
+        <div class="week-grid" id="week-grid"></div>
+      </section>
+
+      <!-- Step 3: stores + shopping list -->
+      <section class="card" id="shop" aria-labelledby="shop-title">
+        <h2 id="shop-title"><span class="step">3</span> Stores &amp; shopping list</h2>
+        <div id="shop-locked" class="locked"></div>
+
+        <div id="shop-body" hidden>
+          <form class="store-search" id="store-form">
+            <label class="field grow">
+              <span>Zip code or address</span>
+              <input type="text" id="location" placeholder="e.g. 60614 or 123 Main St, Austin TX" autocomplete="postal-code" />
+            </label>
+            <label class="field">
+              <span>Radius</span>
+              <select id="radius">
+                <option value="1">1 mile</option>
+                <option value="3">3 miles</option>
+                <option value="5">5 miles</option>
+                <option value="10">10 miles</option>
+                <option value="15">15 miles</option>
+                <option value="25">25 miles</option>
+              </select>
+            </label>
+            <div class="store-buttons">
+              <button type="submit" class="btn">Find stores</button>
+              <button type="button" class="btn ghost" id="use-location">Use my location</button>
+            </div>
+          </form>
+          <p class="status" id="store-status" role="status" aria-live="polite"></p>
+          <ul class="stores" id="store-list"></ul>
+
+          <div class="list-head">
+            <h3 class="sub">Shopping list</h3>
+            <div class="seg" role="group" aria-label="Group list by">
+              <button type="button" data-view="category" class="seg-btn">By aisle</button>
+              <button type="button" data-view="store" class="seg-btn">By store</button>
+            </div>
+          </div>
+          <p class="list-total" id="list-total"></p>
+          <div id="shopping-list"></div>
+          <div class="actions">
+            <button type="button" class="btn" id="copy-list">Copy list</button>
+            <button type="button" class="btn ghost" id="print-list">Print</button>
+          </div>
+          <p class="note">
+            Prices are estimates based on typical US supermarket prices. Free store data doesn't include live prices, so
+            your actual total will vary by store. Store locations come from
+            <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="wrap footer">
+      <p>Your plan is saved in this browser.</p>
+    </footer>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script src="js/data.js"></script>
+    <script src="js/planner.js"></script>
+    <script src="js/app.js"></script>
+  </body>
+</html>
