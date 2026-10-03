@@ -65,7 +65,8 @@
         <div class="day-tabs" role="tablist" id="day-tabs" aria-label="Days of the week"></div>
         <div class="day-panel" id="day-panel" role="tabpanel"></div>
 
-        <h3 class="sub">Week at a glance</h3>
+        <h3 class="sub">Whole week</h3>
+        <p class="hint">Change any meal right here, or pick a day above to see nutrition details.</p>
         <div class="week-grid" id="week-grid"></div>
       </section>
 
@@ -107,14 +108,16 @@
             </div>
           </div>
           <p class="list-total" id="list-total"></p>
+          <p class="warning" id="over-budget" role="alert" hidden></p>
           <div id="shopping-list"></div>
           <div class="actions">
             <button type="button" class="btn" id="copy-list">Copy list</button>
             <button type="button" class="btn ghost" id="print-list">Print</button>
           </div>
           <p class="note">
-            Prices are estimates based on typical US supermarket prices. Free store data doesn't include live prices, so
-            your actual total will vary by store. Store locations come from
+            Prices are estimates based on typical US supermarket prices, adjusted by store type: discount chains like Aldi
+            and Walmart about 15% lower, premium stores like Whole Foods about 25% higher. Free store data doesn't include
+            live prices, so your actual total will vary. Store locations come from
             <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>.
           </p>
         </div>

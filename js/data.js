@@ -37,6 +37,7 @@
       egg: !!o.egg,
       gluten: !!o.gluten,
       honey: !!o.honey,
+      heavy: !!o.heavy,
       staple: !!o.staple,
     };
   }
@@ -59,11 +60,11 @@
     almond_milk: ing('Unsweetened almond milk', DE, 'cup', 0.35),
     greek_yogurt: ing('Plain Greek yogurt', DE, 'cup', 1.25, { dairy: true }),
     cottage_cheese: ing('Cottage cheese', DE, 'cup', 1.2, { dairy: true }),
-    cheddar: ing('Shredded cheddar', DE, 'cup', 1.6, { dairy: true }),
-    mozzarella: ing('Shredded mozzarella', DE, 'cup', 1.5, { dairy: true }),
+    cheddar: ing('Shredded cheddar', DE, 'cup', 1.6, { dairy: true, heavy: true }),
+    mozzarella: ing('Shredded mozzarella', DE, 'cup', 1.5, { dairy: true, heavy: true }),
     feta: ing('Feta cheese', DE, 'oz', 0.55, { dairy: true }),
     parmesan: ing('Grated parmesan', DE, 'tbsp', 0.2, { dairy: true }),
-    butter: ing('Butter', DE, 'tbsp', 0.15, { dairy: true }),
+    butter: ing('Butter', DE, 'tbsp', 0.15, { dairy: true, heavy: true }),
 
     // Plant protein
     tofu: ing('Extra-firm tofu', PP, 'oz', 0.18),
@@ -73,12 +74,12 @@
     chicken_breast: ing('Chicken breast', M, 'lb', 3.99, { meat: true }),
     chicken_thigh: ing('Boneless chicken thighs', M, 'lb', 3.29, { meat: true }),
     ground_turkey: ing('Ground turkey', M, 'lb', 4.99, { meat: true }),
-    ground_beef: ing('Lean ground beef', M, 'lb', 5.99, { meat: true }),
-    steak: ing('Sirloin or flank steak', M, 'lb', 9.99, { meat: true }),
+    ground_beef: ing('Lean ground beef', M, 'lb', 5.99, { meat: true, heavy: true }),
+    steak: ing('Sirloin or flank steak', M, 'lb', 9.99, { meat: true, heavy: true }),
     pork_chop: ing('Boneless pork chops', M, 'lb', 3.99, { meat: true }),
     salmon: ing('Salmon fillet', M, 'lb', 10.99, { fish: true }),
-    deli_turkey: ing('Sliced deli turkey', M, 'oz', 0.6, { meat: true }),
-    bacon: ing('Bacon', M, 'slice', 0.4, { meat: true }),
+    deli_turkey: ing('Sliced deli turkey', M, 'oz', 0.6, { meat: true, heavy: true }),
+    bacon: ing('Bacon', M, 'slice', 0.4, { meat: true, heavy: true }),
 
     // Bread & grains
     oats: ing('Rolled oats', BG, 'cup', 0.3),
@@ -98,7 +99,7 @@
     black_beans: ing('Canned black beans', CD, 'can', 0.95),
     lentils: ing('Dry lentils', CD, 'cup', 0.7),
     canned_tomatoes: ing('Canned diced tomatoes', CD, 'can', 1.0),
-    coconut_milk: ing('Canned coconut milk', CD, 'can', 1.8),
+    coconut_milk: ing('Canned coconut milk', CD, 'can', 1.8, { heavy: true }),
     veg_broth: ing('Vegetable broth', CD, 'cup', 0.45),
     marinara: ing('Marinara sauce', CD, 'cup', 0.9),
     protein_powder: ing('Protein powder', CD, 'scoop', 1.1, { dairy: true }),
@@ -170,6 +171,7 @@
     { id: 'blender', label: 'Blender' },
     { id: 'toaster', label: 'Toaster' },
     { id: 'grill', label: 'Grill' },
+    { id: 'ricecooker', label: 'Rice cooker' },
   ];
 
   // Thresholds: [main meal, snack]. Rules live in planner.js.
@@ -185,6 +187,7 @@
     { id: 'vegan', label: 'Vegan', desc: 'No animal products.' },
     { id: 'pescatarian', label: 'Pescatarian', desc: 'Fish and seafood, no other meat.' },
     { id: 'glutenFree', label: 'Gluten free', desc: 'No wheat-based bread, pasta or soy sauce.' },
+    { id: 'heartHealthy', label: 'Heart healthy', desc: 'Fiber-rich, low in saturated fat and sodium.' },
     { id: 'mediterranean', label: 'Mediterranean', desc: 'Olive oil, veggies, legumes, fish.' },
     { id: 'quick', label: 'Quick (15 min)', desc: 'Ready in 15 minutes or less.' },
   ];
@@ -304,7 +307,7 @@
     r('l-tuna-pasta-salad', 'Mediterranean tuna pasta salad', 'lunch', 20, ['stovetop'],
       [['pasta', 2], ['tuna', 1], ['cucumber', 0.25], ['cherry_tomatoes', 0.25], ['olive_oil', 1], ['lemon', 0.25], ['feta', 0.5]],
       [520, 36, 45, 6], MED),
-    r('l-edamame-bowl', 'Edamame & veggie rice bowl', 'lunch', 10, ['microwave|stovetop'],
+    r('l-edamame-bowl', 'Edamame & veggie rice bowl', 'lunch', 10, ['microwave|stovetop|ricecooker'],
       [['edamame', 0.75], ['rice', 0.25], ['carrots', 1], ['cabbage', 0.5], ['soy_sauce', 1], ['green_onion', 1]],
       [450, 22, 62, 11]),
     r('l-chickpea-smash', 'Smashed chickpea salad sandwich', 'lunch', 10, [],
@@ -331,7 +334,7 @@
       [['zucchini', 2], ['shrimp', 0.33], ['pesto', 1.5], ['cherry_tomatoes', 0.25], ['parmesan', 1]], [380, 33, 14, 4], MED),
     r('d-steak-veggies', 'Garlic butter steak & green beans', 'dinner', 25, ['stovetop|grill'],
       [['steak', 0.375], ['mushrooms', 1], ['green_beans', 1], ['butter', 1], ['garlic', 1]], [520, 48, 14, 5]),
-    r('d-chicken-curry', 'Coconut chicken curry & rice', 'dinner', 45, ['slowcooker|instantpot|stovetop'],
+    r('d-chicken-curry', 'Coconut chicken curry & rice', 'dinner', 45, ['slowcooker|instantpot|stovetop|ricecooker'],
       [['chicken_thigh', 0.33], ['coconut_milk', 0.33], ['canned_tomatoes', 0.25], ['onion', 0.25], ['spices', 2], ['rice', 0.25]],
       [600, 34, 52, 4]),
     r('d-lentil-dal', 'Red lentil dal with spinach', 'dinner', 35, ['stovetop|instantpot|slowcooker'],
@@ -362,7 +365,7 @@
       [520, 18, 76, 11], MED),
     r('d-bbq-chicken', 'Pulled BBQ chicken with yogurt slaw', 'dinner', 240, ['slowcooker|instantpot|oven'],
       [['chicken_breast', 0.33], ['bbq_sauce', 2], ['cabbage', 1], ['greek_yogurt', 0.125]], [330, 41, 26, 3]),
-    r('d-bean-burrito-bowl', 'Microwave bean & veggie burrito bowl', 'dinner', 10, ['microwave|stovetop'],
+    r('d-bean-burrito-bowl', 'Microwave bean & veggie burrito bowl', 'dinner', 10, ['microwave|stovetop|ricecooker'],
       [['black_beans', 0.5], ['frozen_veg', 1], ['rice', 0.25], ['salsa', 2], ['cheddar', 0.125]], [500, 20, 85, 18]),
     r('d-mezze-plate', 'No-cook Mediterranean mezze plate', 'dinner', 10, [],
       [['hummus', 4], ['pita', 1], ['cucumber', 0.5], ['cherry_tomatoes', 0.5], ['feta', 1], ['chickpeas', 0.25]],
@@ -409,7 +412,26 @@
     r('s-cheese-walnuts', 'Cheese & walnuts', 'snack', 1, [], [['cheddar', 0.125], ['walnuts', 0.5]], [160, 6, 2, 1]),
   ];
 
-  const data = { CATEGORIES, WHOLE_UNITS, INGREDIENTS, APPLIANCES, STYLES, MEALS, DAYS, RECIPES };
+  // Store price tiers, guessed from the store or brand name. Base prices above are "standard".
+  const STORE_TIERS = {
+    discount: { label: 'Discount', factor: 0.85 },
+    standard: { label: 'Standard', factor: 1 },
+    premium: { label: 'Premium', factor: 1.25 },
+  };
+
+  const TIER_CHAINS = {
+    discount: [
+      'aldi', 'walmart', 'lidl', 'save a lot', 'save-a-lot', 'food 4 less', 'foods co', 'winco', 'grocery outlet',
+      'costco', "sam's club", 'price rite', 'market basket', 'fiesta mart', 'save mart', 'smart & final',
+      'food lion', 'piggly wiggly', 'sprouts outlet', 'cash saver', 'superior grocers',
+    ],
+    premium: [
+      'whole foods', 'sprouts', 'the fresh market', 'erewhon', 'earth fare', "gelson's", 'gelsons', 'bristol farms',
+      'fairway', "dean & deluca", 'eataly', 'central market', 'natural grocers', 'new seasons',
+    ],
+  };
+
+  const data = { STORE_TIERS, TIER_CHAINS, CATEGORIES, WHOLE_UNITS, INGREDIENTS, APPLIANCES, STYLES, MEALS, DAYS, RECIPES };
 
   if (typeof module === 'object' && module.exports) {
     module.exports = data;

@@ -261,24 +261,47 @@
     panel.replaceChildren(h('h3', null, day), ...slots);
   }
 
+  // 7 days x 4 slots, every cell a dropdown. Same plan as the day panel above.
   function renderWeekGrid() {
+    const optionsByMeal = {};
+    D.MEALS.forEach((m) => {
+      optionsByMeal[m.id] = P.recipeOptions(m.id, state.prefs);
+    });
     $('week-grid').replaceChildren(
-      ...D.DAYS.map((day) =>
-        h(
-          'button',
-          { type: 'button', class: 'week-day' + (day === state.day ? ' active' : ''), onclick: () => selectDay(day) },
-          h('h4', null, day),
+      ...D.DAYS.map((day) => {
+        const mainDone = P.isDayMainComplete(state.plan, day);
+        return h(
+          'div',
+          { class: 'week-day' + (day === state.day ? ' active' : '') },
+          h('button', { type: 'button', class: 'week-day-name', onclick: () => selectDay(day) }, day),
           D.MEALS.map((meal) => {
-            const rec = P.getRecipe(state.plan[day][meal.id]);
+            const current = P.getRecipe(state.plan[day][meal.id]);
+            const options = optionsByMeal[meal.id];
+            const locked = meal.id === 'snack' && !mainDone;
+            const sel = h('select', {
+              disabled: locked,
+              title: current ? current.name : '',
+              'aria-label': `${day} ${meal.label.toLowerCase()}`,
+              onchange: (e) => {
+                state.plan[day][meal.id] = e.target.value || null;
+                update();
+              },
+            });
+            sel.append(h('option', { value: '' }, locked ? 'After 3 meals' : meal.id === 'snack' ? 'Optional' : '—'));
+            options.forEach((rec) => sel.append(h('option', { value: rec.id }, rec.name)));
+            if (current && !options.includes(current)) {
+              sel.append(h('optgroup', { label: "Doesn't fit your plan" }, h('option', { value: current.id }, current.name)));
+            }
+            sel.value = current ? current.id : '';
             return h(
-              'p',
-              { class: 'm' },
+              'label',
+              { class: 'm' + (current && !P.fitsPrefs(current, state.prefs) ? ' misfit' : '') },
               h('b', null, meal.label),
-              rec ? rec.name : h('span', { class: 'empty' }, meal.id === 'snack' ? 'Optional' : 'Not picked')
+              sel
             );
           })
-        )
-      )
+        );
+      })
     );
   }
 
@@ -307,9 +330,13 @@
 
   function renderStores() {
     const list = $('store-list');
+    const items = P.buildShoppingList(state.plan, servings());
+    const totals = state.stores.map((s) => P.storeTotal(items, s));
+    const cheapest = totals.length ? Math.min(...totals) : 0;
     list.replaceChildren(
-      ...state.stores.map((s) => {
+      ...state.stores.map((s, i) => {
         const on = state.selectedStores.includes(s.id);
+        const tier = D.STORE_TIERS[s.tier || 'standard'];
         const dir = `https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lon}`;
         return h(
           'li',
@@ -324,7 +351,13 @@
             'div',
             null,
             h('div', { class: 'store-name' }, s.name),
-            h('div', { class: 'store-meta' }, `${s.type} · ${s.distance.toFixed(1)} mi`),
+            h('div', { class: 'store-meta' }, `${s.type} · ${s.distance.toFixed(1)} mi · ${tier.label} prices`),
+            h(
+              'div',
+              { class: 'store-total' },
+              `Whole list ≈ ${P.money(totals[i])}`,
+              totals[i] === cheapest && state.stores.length > 1 ? h('span', { class: 'badge' }, 'Cheapest') : null
+            ),
             s.address ? h('div', { class: 'store-meta' }, s.address) : null,
             h('a', { href: dir, target: '_blank', rel: 'noopener', class: 'store-meta' }, 'Directions')
           )
@@ -364,9 +397,14 @@
     const remaining = P.listTotal(items, state.checked);
     const budget = Number(state.prefs.budget) || 0;
     $('list-total').textContent =
-      `Estimated total ${P.money(total)}` +
+      `Estimated total ${P.money(total)} at standard prices` +
       (budget ? ` (budget ${P.money(budget)})` : '') +
       (remaining !== total ? ` · ${P.money(remaining)} left to buy` : '');
+    const over = budget > 0 && total > budget;
+    $('over-budget').hidden = !over;
+    if (over) {
+      $('over-budget').textContent = `This plan is about ${P.money(total - budget)} over your weekly budget. Swap a few meals for cheaper ones, try the Money saver style, or shop at a discount store.`;
+    }
 
     document.querySelectorAll('.seg-btn').forEach((b) => b.classList.toggle('on', b.dataset.view === state.view));
 
@@ -387,7 +425,15 @@
 
     $('shopping-list').replaceChildren(
       ...groups.map((g) => {
-        const head = h('div', { class: 'group-head' }, h('h4', null, g.key));
+        const store = state.view === 'store' ? stores.find((s) => s.name === g.key) : null;
+        const head = h(
+          'div',
+          { class: 'group-head' },
+          h('h4', null, g.key),
+          store
+            ? h('span', { class: 'store-meta' }, `≈ ${P.money(P.storeTotal(g.items, store, state.checked))} at ${D.STORE_TIERS[store.tier || 'standard'].label.toLowerCase()} prices`)
+            : null
+        );
         if (state.view === 'category' && stores.length) {
           head.append(
             storeSelect('', `Send all ${g.key} to a store`, (e) => {
@@ -441,9 +487,10 @@
     );
   }
 
-  function setStatus(msg, isError) {
+  function setStatus(msg, isError, retry) {
     const el = $('store-status');
-    el.textContent = msg;
+    el.replaceChildren(msg);
+    if (retry) el.append(' ', h('button', { type: 'button', class: 'btn ghost small', onclick: retry }, 'Try again'));
     el.classList.toggle('error', !!isError);
   }
 
@@ -504,7 +551,11 @@
       renderStores();
       renderList();
     } catch (e) {
-      setStatus(e.message || 'Store search failed. Please try again.', true);
+      const msg =
+        e instanceof TypeError || /Store search failed/.test(e.message)
+          ? "Couldn't reach the store map service. It may be busy."
+          : e.message;
+      setStatus(msg, true, () => searchStores(coords));
     }
   }
 
@@ -520,7 +571,10 @@
         $('location').value = '';
         searchStores({ lat: pos.coords.latitude, lon: pos.coords.longitude });
       },
-      () => setStatus('Location permission was denied. Enter a zip code instead.', true),
+      () => {
+        setStatus('Location permission was denied. Enter a zip code or address instead.', true);
+        $('location').focus();
+      },
       { timeout: 15000, maximumAge: 600000 }
     );
   }

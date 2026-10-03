@@ -151,3 +151,38 @@ test('shopping list text groups by store', () => {
   assert.match(text, /ANY STORE\n- Peanut butter/);
   assert.doesNotMatch(text, /bread/i);
 });
+
+test('heart healthy skips heavy ingredients', () => {
+  assert.ok(!P.matchesStyle(P.getRecipe('b-egg-muffin-sandwich'), 'heartHealthy'), 'bacon');
+  assert.ok(!P.matchesStyle(P.getRecipe('d-steak-veggies'), 'heartHealthy'), 'steak and butter');
+  assert.ok(P.matchesStyle(P.getRecipe('d-lentil-dal'), 'heartHealthy') === false, 'coconut milk');
+  assert.ok(P.matchesStyle(P.getRecipe('l-lentil-soup'), 'heartHealthy'));
+});
+
+test('money saver lists the cheapest meals first', () => {
+  const opts = P.recipeOptions('dinner', { styles: ['moneySaver'], appliances: ALL });
+  const costs = opts.map(P.recipeCost);
+  assert.deepEqual(costs, [...costs].sort((a, b) => a - b));
+});
+
+test('rice cooker counts as an appliance option', () => {
+  assert.ok(P.hasAppliances(P.getRecipe('d-bean-burrito-bowl'), ['ricecooker']));
+});
+
+test('store tiers adjust the estimated total', () => {
+  assert.equal(P.storeTier('ALDI'), 'discount');
+  assert.equal(P.storeTier('Walmart Supercenter'), 'discount');
+  assert.equal(P.storeTier('Whole Foods Market'), 'premium');
+  assert.equal(P.storeTier("Joe's Corner Market"), 'standard');
+  const plan = P.emptyPlan();
+  plan.Monday.breakfast = 'b-pb-toast';
+  const items = P.buildShoppingList(plan, 1);
+  const base = P.listTotal(items);
+  assert.ok(Math.abs(P.storeTotal(items, { tier: 'discount' }) - base * 0.85) < 1e-9);
+  assert.ok(Math.abs(P.storeTotal(items, { tier: 'premium' }) - base * 1.25) < 1e-9);
+  const stores = P.parseOverpassStores(
+    { elements: [{ type: 'node', id: 9, lat: 41.9, lon: -87.6, tags: { shop: 'supermarket', name: 'Whole Foods Market' } }] },
+    41.9, -87.6, 5
+  );
+  assert.equal(stores[0].tier, 'premium');
+});

@@ -27,7 +27,7 @@
   }
 
   function recipeFlags(recipe) {
-    const flags = { meat: false, fish: false, dairy: false, egg: false, gluten: false, honey: false };
+    const flags = { meat: false, fish: false, dairy: false, egg: false, gluten: false, honey: false, heavy: false };
     recipe.ingredients.forEach(([key]) => {
       const i = D.INGREDIENTS[key];
       Object.keys(flags).forEach((f) => {
@@ -45,6 +45,7 @@
     keto: [12, 6],
     moneySaver: [2.5, 1],
     lowCalorie: [450, 180],
+    heartHealthy: [4, 2],
   };
 
   function matchesStyle(recipe, styleId) {
@@ -73,6 +74,8 @@
         return !f.meat;
       case 'glutenFree':
         return !f.gluten;
+      case 'heartHealthy':
+        return !f.heavy && recipe.fiber >= lim;
       case 'mediterranean':
         return !!recipe.med;
       case 'quick':
@@ -96,9 +99,11 @@
     return fitsStyles(recipe, prefs.styles) && hasAppliances(recipe, prefs.appliances);
   }
 
+  // Money saver lists the cheapest meals first; otherwise alphabetical.
   function recipeOptions(meal, prefs) {
-    return D.RECIPES.filter((rec) => rec.meal === meal && fitsPrefs(rec, prefs)).sort((a, b) =>
-      a.name.localeCompare(b.name)
+    const cheapFirst = (prefs.styles || []).includes('moneySaver');
+    return D.RECIPES.filter((rec) => rec.meal === meal && fitsPrefs(rec, prefs)).sort(
+      (a, b) => (cheapFirst ? recipeCost(a) - recipeCost(b) : 0) || a.name.localeCompare(b.name)
     );
   }
 
@@ -299,7 +304,7 @@
     return 3958.8 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   }
 
-  const STORE_SHOPS = ['supermarket', 'grocery', 'greengrocer', 'wholesale', 'health_food', 'butcher'];
+  const STORE_SHOPS = ['supermarket', 'greengrocer'];
 
   function buildOverpassQuery(lat, lon, radiusMiles) {
     const meters = Math.round(Math.min(Math.max(radiusMiles, 0.5), 50) * MILE_M);
@@ -320,10 +325,20 @@
     supermarket: 'Supermarket',
     grocery: 'Grocery',
     greengrocer: 'Produce market',
-    wholesale: 'Warehouse club',
-    health_food: 'Health food',
-    butcher: 'Butcher',
   };
+
+  function storeTier(name) {
+    const n = String(name || '').toLowerCase();
+    if (D.TIER_CHAINS.discount.some((c) => n.includes(c))) return 'discount';
+    if (D.TIER_CHAINS.premium.some((c) => n.includes(c))) return 'premium';
+    return 'standard';
+  }
+
+  // Estimated cost of the list at a store, using its price tier.
+  function storeTotal(items, store, excluded) {
+    const tier = D.STORE_TIERS[(store && store.tier) || 'standard'] || D.STORE_TIERS.standard;
+    return listTotal(items, excluded) * tier.factor;
+  }
 
   function parseOverpassStores(json, lat, lon, radiusMiles) {
     const seen = new Set();
@@ -345,6 +360,7 @@
         name,
         brand: tags.brand || '',
         type: SHOP_LABELS[tags.shop] || 'Grocery',
+        tier: storeTier(`${name} ${tags.brand || ''}`),
         address: formatAddress(tags),
         lat: sLat,
         lon: sLon,
@@ -405,6 +421,8 @@
     haversineMiles,
     buildOverpassQuery,
     parseOverpassStores,
+    storeTier,
+    storeTotal,
     shoppingListText,
   };
 

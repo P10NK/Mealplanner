@@ -416,11 +416,8 @@ input:focus {
   border-radius: 8px;
   padding: 8px;
   font-size: 0.8rem;
-  cursor: pointer;
   background: var(--card);
-  color: var(--text);
-  text-align: left;
-  font-family: inherit;
+  min-width: 0;
 }
 
 .week-day.active {
@@ -428,12 +425,23 @@ input:focus {
   box-shadow: inset 0 0 0 1px var(--accent);
 }
 
-.week-day h4 {
-  margin: 0 0 6px;
+.week-day-name {
+  font: inherit;
+  font-weight: 700;
   font-size: 0.85rem;
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 0 0 6px;
+  color: var(--text);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: var(--line);
+  text-underline-offset: 3px;
 }
 
 .week-day .m {
+  display: block;
   margin: 0 0 6px;
 }
 
@@ -446,9 +454,15 @@ input:focus {
   font-weight: 600;
 }
 
-.week-day .empty {
-  color: var(--muted);
-  font-style: italic;
+.week-day select {
+  min-height: 34px;
+  padding: 4px 6px;
+  font-size: 0.8rem;
+  text-overflow: ellipsis;
+}
+
+.week-day .m.misfit select {
+  border-color: var(--warn);
 }
 
 /* Shop */
@@ -484,6 +498,36 @@ input:focus {
 
 .status.error {
   color: var(--warn);
+}
+
+.btn.small {
+  min-height: 32px;
+  padding: 4px 10px;
+  font-size: 0.85rem;
+}
+
+.warning {
+  background: var(--warn-soft);
+  color: var(--warn);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-weight: 600;
+}
+
+.store-total {
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 0.75rem;
 }
 
 .stores {
@@ -674,6 +718,10 @@ input:focus {
   }
   .week-grid {
     grid-template-columns: 1fr;
+  }
+  .week-day select {
+    font-size: 0.9rem;
+    min-height: 40px;
   }
   .store-search .field {
     flex: 1 1 100%;

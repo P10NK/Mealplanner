@@ -4,15 +4,15 @@ Plan a week of meals around your diet style, your kitchen and your budget, then 
 
 ## What it does
 
-1. **Your plan.** Pick one or more plan styles (balanced, high protein, high fiber, low carb, keto, money saver, low calorie, vegetarian, vegan, pescatarian, gluten free, Mediterranean, quick), tick the cooking appliances you have, and set a weekly budget and how many people are eating.
-2. **Your week.** Pick a day (Monday to Sunday) and choose breakfast, lunch and dinner from dropdowns that only list meals fitting your styles and appliances. A snack slot unlocks once a day's three meals are set. "Auto-fill empty meals" fills the rest of the week while trying to stay under budget. A budget meter tracks the estimated grocery cost.
-3. **Stores & shopping list.** Once every day has breakfast, lunch and dinner, enter a zip code or address (or use your location) and a radius to find nearby grocery stores. The shopping list combines ingredients across the whole week, grouped by aisle, with quantities and estimated costs. Assign items, or whole aisles, to the stores you'll shop at, view the list by store, check items off, copy it or print it.
+1. **Your plan.** Pick one or more plan styles (balanced, high protein, high fiber, low carb, keto, money saver, low calorie, heart healthy, vegetarian, vegan, pescatarian, gluten free, Mediterranean, quick), tick the cooking appliances you have, and set a weekly budget and how many people are eating.
+2. **Your week.** Pick a day (Monday to Sunday) and choose breakfast, lunch and dinner from dropdowns that only list meals fitting your styles and appliances (Money saver lists the cheapest first). The whole-week grid below has a dropdown for every slot too. A snack slot unlocks once a day's three meals are set. "Auto-fill empty meals" fills the rest of the week while trying to stay under budget. A budget meter tracks the estimated grocery cost.
+3. **Stores & shopping list.** Once every day has breakfast, lunch and dinner, enter a zip code or address (or use your location) and a radius to find nearby grocery stores. Each store shows an estimated total for the whole list based on its price tier. The shopping list combines ingredients across the whole week, grouped by aisle, with quantities and estimated costs. Assign items, or whole aisles, to the stores you'll shop at, view the list by store, check items off, copy it or print it.
 
 Your plan is saved in your browser (localStorage).
 
 ### About prices and stores
 
-Ingredient prices are estimates based on typical US supermarket prices (see `js/data.js`). Free store data does not include live prices, so actual totals vary by store. Store locations come from [OpenStreetMap](https://www.openstreetmap.org/copyright) via the Overpass API, and addresses are looked up with Nominatim. Both are free and keyless.
+Ingredient prices are estimates based on typical US supermarket prices (see `js/data.js`). Each store gets a price tier from its name: discount chains such as Aldi and Walmart are about 15% cheaper, premium stores such as Whole Foods about 25% more expensive, and everything else uses the standard price. The search covers supermarkets and produce markets. If the plan is over budget the app warns you but still builds the list. Free store data does not include live prices, so actual totals vary by store. Store locations come from [OpenStreetMap](https://www.openstreetmap.org/copyright) via the Overpass API, and addresses are looked up with Nominatim. Both are free and keyless.
 
 ## Running it
 
