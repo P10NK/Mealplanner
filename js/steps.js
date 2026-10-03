@@ -541,6 +541,102 @@
     'rs-trail-mix': ['Open the pack. Each one is a single serving.'],
     'rs-egg-pack': ['Peel back the film. Sprinkle with salt and pepper if you like.'],
     'rs-yogurt-cup': ['Stir the yogurt cup and eat it cold.'],
+
+    // Everyday grab-and-go
+    'rb-pop-tarts': ['Eat them straight from the pack, or toast on the lowest setting for a warm one.'],
+    'rb-cereal': ['Pour about 1½ cups of cereal into a bowl.', 'Add a cup of cold milk.'],
+    'rb-donuts': ['Grab two and enjoy. Warm for 8 seconds in the microwave if you like them soft.'],
+    'rb-muffin': ['Eat as is, or warm for 15 seconds in the microwave.'],
+    'rb-bagel': ['Slice the bagel and toast it if you have a toaster.', 'Spread with cream cheese.'],
+    'rb-breakfast-burrito': [
+      'Microwave: wrap in a paper towel and heat about 1 minute per side.',
+      'Oven or air fryer: bake at 375°F for about 20 minutes (air fryer about 10) until hot in the middle.',
+      'Let it rest 1 minute.',
+    ],
+    'rb-pancakes': [
+      'Microwave three pancakes on a plate for about 1 minute, or toast them like waffles.',
+      'Oven: 375°F for about 8 minutes.',
+      'Pour on the syrup.',
+    ],
+    'rb-sausage-biscuit': [
+      'Microwave: wrap in a paper towel and heat about 1 minute, flipping halfway.',
+      'Oven or air fryer: 350°F for about 15 minutes (air fryer about 8).',
+    ],
+
+    'rl-lunchables': ['Open the tray and stack the crackers, meat and cheese.'],
+    'rl-pasta-cup': ['Peel back the lid a little.', 'Microwave about 1 minute, stir and let it stand 1 minute.'],
+    'rl-canned-soup': [
+      'Microwave: pour into a bowl, cover and heat 2½ to 3 minutes, stirring halfway.',
+      'Stovetop: heat in a small pot over medium, stirring, for about 5 minutes.',
+    ],
+    'rl-nuggets': [
+      'Air fryer: 400°F for 8 to 10 minutes, shaking once. Oven: 400°F for about 15 minutes.',
+      'Microwave: about 1½ minutes for 6 nuggets (softer, not crispy).',
+      'Dip in BBQ sauce.',
+    ],
+    'rl-corn-dogs': [
+      'Microwave: about 50 seconds each, flipping halfway.',
+      'Oven or air fryer: 375°F for about 18 minutes (air fryer about 10) for a crispier outside.',
+    ],
+    'rl-pizza-rolls': [
+      'Air fryer: 380°F for 6 to 8 minutes, shaking once. Oven: 425°F for about 12 minutes.',
+      'Microwave: spread on a plate and heat about 1 minute.',
+      'Let them cool a minute. The filling gets very hot.',
+    ],
+    'rl-taquitos': [
+      'Air fryer: 400°F for 7 to 9 minutes. Oven: 425°F for about 15 minutes.',
+      'Microwave: about 1½ minutes for 4 (softer).',
+      'Serve with salsa for dipping.',
+    ],
+    'rl-sliders': ['Take the patty out of the bun, wrap the bun in a paper towel.', 'Microwave together about 1 minute, then reassemble.'],
+
+    'rd-lasagna': [
+      'Microwave: cut a vent in the film and heat about 6 minutes, then let it stand 1 minute.',
+      'Oven: 375°F for about 45 minutes, covered.',
+    ],
+    'rd-frozen-pizza': ['Heat the oven to the temperature on the box, usually 400 to 425°F.', 'Bake directly on the rack for 18 to 22 minutes.', 'Cut into slices. A third of the pizza is one serving.'],
+    'rd-pot-pie': [
+      'Microwave: cut slits in the crust and heat about 7 to 9 minutes.',
+      'Oven: bake on a baking sheet at 400°F for about 50 minutes for a crispy crust.',
+      'Let it stand 5 minutes. The filling is very hot.',
+    ],
+    'rd-fish-sticks': [
+      'Air fryer: cook the fries at 400°F for about 10 minutes, then add the fish sticks for 8 more.',
+      'Oven: bake fries and fish sticks on a sheet pan at 425°F for about 18 minutes, flipping once.',
+      'Serve with ketchup or tartar sauce.',
+    ],
+    'rd-chicken-tenders': [
+      'Air fryer: cook the fries at 400°F for about 10 minutes, then add the tenders for 10 more.',
+      'Oven: bake both on a sheet pan at 425°F for about 20 minutes, flipping once.',
+      'Serve with BBQ sauce.',
+    ],
+    'rd-orange-chicken': [
+      'Heat the chicken: air fryer 400°F for about 10 minutes, or microwave as the bag says (about 3 minutes), or pan-fry 8 minutes.',
+      'Warm the sauce packet in hot water or the microwave and toss with the chicken.',
+      'Microwave the rice cup about 1 minute and serve together.',
+    ],
+    'rd-tv-dinner': ['Cut a vent in the film over each section.', 'Microwave as the box says, usually 5 to 7 minutes, stirring the sides halfway.', 'Let it stand 1 minute.'],
+    'rd-chili-chips': [
+      'Heat half a can of chili in the microwave (about 2 minutes, covered) or in a small pot.',
+      'Pour over a handful of corn chips. Save the rest of the can in the fridge.',
+    ],
+    'rd-mac-hotdogs': [
+      'Boil the macaroni from the box for 7 to 8 minutes, then drain.',
+      'Stir in the cheese packet, a splash of milk and a little butter.',
+      'Slice the hot dogs and warm them in the pot, or microwave them for 30 seconds, then stir in.',
+    ],
+
+    'rs-chips': ['Open the bag and enjoy.'],
+    'rs-goldfish': ['Open the pack and enjoy.'],
+    'rs-cookies': ['Open the pack and enjoy. Milk optional.'],
+    'rs-popcorn': ['Open the bag and enjoy.'],
+    'rs-candy-bar': ['Unwrap and enjoy.'],
+    'rs-pudding': ['Peel back the lid. Best cold.'],
+    'rs-krispies': ['Unwrap and enjoy.'],
+    'rs-snack-cake': ['Unwrap and enjoy.'],
+    'rs-cheese-puffs': ['Open the bag and enjoy.'],
+    'rs-ice-cream-sandwich': ['Keep frozen until you eat it. Unwrap and enjoy.'],
+    'rs-pretzels': ['Open the bag and enjoy.'],
   };
 
   if (typeof module === 'object' && module.exports) {
