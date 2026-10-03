@@ -451,6 +451,96 @@
       'Roll into small balls. They keep in the fridge for a week.',
     ],
     's-cheese-walnuts': ['Portion the cheddar and walnuts into a small bowl or container.'],
+
+    // Ready-made: store-bought items with heating or serving steps. Times are typical; the box wins.
+    'rb-yogurt-cup': ['Stir the yogurt cup and eat it cold.'],
+    'rb-yogurt-cup-banana': ['Stir the yogurt cup.', 'Peel the banana and slice it on top, or eat it on the side.'],
+    'rb-belvita': ['Open the pack. Each pack is one serving.'],
+    'rb-belvita-shake': ['Shake the protein shake well and serve it cold.', 'Eat the belVita biscuits alongside.'],
+    'rb-breakfast-sandwich': [
+      'Microwave: unwrap, wrap in a paper towel and heat about 1½ to 2 minutes, flipping halfway.',
+      'Oven or air fryer: bake at 350°F for about 20 minutes (air fryer about 10 minutes) until hot in the middle.',
+      'Let it rest 1 minute before eating.',
+    ],
+    'rb-instant-oatmeal': [
+      'Microwave: empty the packet into a bowl, add the water or milk the packet calls for, and heat 1 to 2 minutes.',
+      'Stovetop: bring the liquid to a boil, stir in the oats and cook 1 minute.',
+      'Stir and let it thicken for a minute.',
+    ],
+    'rb-waffles': [
+      'Toast the frozen waffles on medium until crisp, or bake at 400°F for about 5 minutes (air fryer 360°F, 3 to 4 minutes).',
+      'Spread with peanut butter while warm.',
+    ],
+    'rb-protein-shake': ['Shake the protein shake well and serve it cold.', 'Eat the banana alongside.'],
+
+    'rl-hot-pocket': [
+      'Microwave: unwrap, slide into the crisping sleeve and heat about 2 minutes (1 minute for a single in a high-power microwave).',
+      'Oven or air fryer: bake at 350°F for about 25 minutes (air fryer about 12 minutes), no sleeve.',
+      'Let it stand 2 minutes. The filling gets very hot.',
+    ],
+    'rl-hot-pocket-apple': [
+      'Heat the Hot Pocket: microwave about 2 minutes in its sleeve, or bake at 350°F for about 25 minutes (air fryer about 12).',
+      'Let it stand 2 minutes.',
+      'Wash and slice the apple to eat on the side.',
+    ],
+    'rl-frozen-burrito': [
+      'Microwave: wrap in a paper towel and heat about 1 minute, flip, then 1 more minute.',
+      'Oven or air fryer: wrap in foil and bake at 350°F for about 25 minutes (air fryer about 12, unwrapped).',
+      'Top with salsa.',
+    ],
+    'rl-frozen-meal': [
+      'Cut a vent in the film and microwave as the box says, usually 4 to 5 minutes with a stir halfway.',
+      'Let it stand 1 minute before eating.',
+    ],
+    'rl-soup-bowl': ['Peel back the lid to the vent line.', 'Microwave about 2 to 3 minutes, stir and let it stand 1 minute.'],
+    'rl-deli-sandwich': ['Keep it refrigerated and eat it cold, by the date on the label.'],
+    'rl-ramen-cup': [
+      'Microwave: fill the cup with water to the line and heat about 3 minutes. Stovetop: boil the water, pour it in and cover 3 minutes.',
+      'Stir in the seasoning.',
+      'Top with half a hard-boiled egg.',
+    ],
+    'rl-mac-cup': [
+      'Add water to the fill line and microwave about 3½ minutes.',
+      'Stir in the cheese powder until smooth.',
+      'Eat the string cheese on the side.',
+    ],
+
+    'rd-personal-pizza': [
+      'Oven: bake at 400°F directly on the rack for 15 to 18 minutes, until the cheese bubbles.',
+      'Air fryer: 375°F for about 8 to 10 minutes. Microwave: use the crisping tray if the box has one, about 3 minutes.',
+      'Let it cool 2 minutes before slicing.',
+    ],
+    'rd-power-bowl': [
+      'Cut a vent in the film and microwave about 3 minutes.',
+      'Stir, then heat 1 to 2 minutes more until hot all the way through.',
+    ],
+    'rd-rotisserie': [
+      'Carve a quarter of the rotisserie chicken (a breast and a wing, or a leg and thigh). Chill the rest for later meals.',
+      'Toss a third of the salad kit with its dressing and toppings.',
+      'Serve the chicken warm or cold beside the salad.',
+    ],
+    'rd-skillet-meal': [
+      'Stovetop: empty the bag into a nonstick skillet over medium-high heat, cover and cook 8 to 10 minutes, stirring often.',
+      'Microwave: empty into a microwave-safe dish, cover and heat 6 to 7 minutes, stirring halfway.',
+      'Let it stand 1 minute before serving.',
+    ],
+    'rd-frozen-meal': [
+      'Cut a vent in the film and microwave as the box says, usually 4 to 5 minutes with a stir halfway.',
+      'Toss a quarter of the salad kit with its dressing and serve on the side.',
+    ],
+
+    'rs-uncrustables': ['Thaw in the fridge overnight, or on the counter for 30 to 60 minutes.', 'Eat within 8 hours of thawing.'],
+    'rs-string-cheese': ['Unwrap two sticks and eat them cold.'],
+    'rs-protein-bar': ['Unwrap and eat.'],
+    'rs-granola-bar': ['Unwrap and eat.'],
+    'rs-fruit-cup': ['Peel back the lid. Drain the juice first if you want fewer carbs.'],
+    'rs-applesauce': ['Twist off the cap and squeeze. Chill it first if you like it cold.'],
+    'rs-cheese-crackers': ['Open the pack and eat. One pack is one serving.'],
+    'rs-jerky': ['Portion about 1 oz (a small handful) and reseal the bag.'],
+    'rs-hummus-pretzels': ['Peel back the lid and dip the pretzels in the hummus. Keep refrigerated.'],
+    'rs-trail-mix': ['Open the pack. Each one is a single serving.'],
+    'rs-egg-pack': ['Peel back the film. Sprinkle with salt and pepper if you like.'],
+    'rs-yogurt-cup': ['Stir the yogurt cup and eat it cold.'],
   };
 
   if (typeof module === 'object' && module.exports) {

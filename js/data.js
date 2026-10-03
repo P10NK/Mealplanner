@@ -19,6 +19,7 @@
     'Frozen',
     'Nuts, Seeds & Snacks',
     'Oils, Spices & Condiments',
+    'Ready-to-Eat',
   ];
 
   // Units counted in whole items are rounded up on the shopping list.
@@ -51,6 +52,7 @@
   const FR = 'Frozen';
   const NS = 'Nuts, Seeds & Snacks';
   const OC = 'Oils, Spices & Condiments';
+  const RE = 'Ready-to-Eat';
 
   const INGREDIENTS = {
     // Dairy & eggs
@@ -159,6 +161,37 @@
     mayo: ing('Mayonnaise', OC, 'tbsp', 0.07, { egg: true, staple: true }),
     bbq_sauce: ing('BBQ sauce', OC, 'tbsp', 0.08),
     tahini: ing('Tahini', OC, 'tbsp', 0.25),
+
+    // Ready-made, store-bought items (priced per pack or single serving)
+    yogurt_cup: ing('Greek yogurt cups (e.g. Oikos, Chobani)', DE, 'each', 1.25, { dairy: true }),
+    string_cheese: ing('String cheese', DE, 'each', 0.45, { dairy: true }),
+    protein_shake: ing('Ready-to-drink protein shakes (e.g. Fairlife, Premier)', RE, 'each', 2.5, { dairy: true }),
+    belvita: ing('belVita breakfast biscuit packs', RE, 'each', 0.9, { gluten: true }),
+    oatmeal_packet: ing('Instant oatmeal packets', RE, 'each', 0.45),
+    uncrustables: ing('Uncrustables PB&J sandwiches', FR, 'each', 0.85, { gluten: true }),
+    breakfast_sandwich: ing('Frozen breakfast sandwiches (e.g. Jimmy Dean Delights)', FR, 'each', 1.75, { meat: true, egg: true, dairy: true, gluten: true, heavy: true }),
+    frozen_waffles: ing('Frozen waffles (e.g. Eggo)', FR, 'each', 0.35, { egg: true, gluten: true, dairy: true }),
+    hot_pocket: ing('Hot Pockets', FR, 'each', 1.75, { meat: true, dairy: true, gluten: true, heavy: true }),
+    frozen_burrito: ing('Frozen bean & cheese burritos', FR, 'each', 1.0, { dairy: true, gluten: true, heavy: true }),
+    frozen_meal: ing('Frozen entrées (e.g. Lean Cuisine, Healthy Choice)', FR, 'each', 3.25, { meat: true, dairy: true, gluten: true }),
+    power_bowl: ing('Frozen protein bowls (e.g. Healthy Choice Power Bowls)', FR, 'each', 3.5, { meat: true }),
+    personal_pizza: ing('Frozen personal pizzas', FR, 'each', 3.5, { meat: true, dairy: true, gluten: true, heavy: true }),
+    skillet_meal: ing('Frozen skillet meals (e.g. Birds Eye Voila), per serving', FR, 'each', 2.5, { meat: true, dairy: true, gluten: true }),
+    ramen_cup: ing('Instant ramen cups', RE, 'each', 0.6, { gluten: true, heavy: true }),
+    soup_bowl: ing('Microwavable soup bowls (e.g. Progresso)', RE, 'each', 2.25, { meat: true, gluten: true }),
+    mac_cup: ing('Microwave mac & cheese cups', RE, 'each', 1.0, { dairy: true, gluten: true, heavy: true }),
+    deli_sandwich: ing('Grab-and-go deli sandwiches', RE, 'each', 5.0, { meat: true, dairy: true, gluten: true, heavy: true }),
+    rotisserie_chicken: ing('Rotisserie chicken', RE, 'each', 5.99, { meat: true }),
+    salad_kit: ing('Bagged salad kits', P, 'each', 3.99, { dairy: true, egg: true }),
+    protein_bar: ing('Protein bars', RE, 'each', 1.5, { dairy: true }),
+    granola_bar: ing('Granola bars', RE, 'each', 0.5, { gluten: true, honey: true }),
+    fruit_cup: ing('Fruit cups in juice', RE, 'each', 0.75),
+    applesauce: ing('Applesauce pouches', RE, 'each', 0.6),
+    cracker_pack: ing('Cheese & cracker snack packs', RE, 'each', 0.75, { dairy: true, gluten: true, heavy: true }),
+    jerky: ing('Beef jerky', RE, 'oz', 1.75, { meat: true, heavy: true }),
+    hummus_pretzels: ing('Hummus & pretzel snack cups', RE, 'each', 1.5, { gluten: true }),
+    trail_mix: ing('Trail mix snack packs', RE, 'each', 0.9),
+    egg_pack: ing('Hard-boiled egg 2-packs', DE, 'each', 1.6, { egg: true }),
   };
 
   const APPLIANCES = [
@@ -190,6 +223,7 @@
     { id: 'heartHealthy', label: 'Heart healthy', desc: 'Fiber-rich, low in saturated fat and sodium.' },
     { id: 'mediterranean', label: 'Mediterranean', desc: 'Olive oil, veggies, legumes, fish.' },
     { id: 'quick', label: 'Quick (15 min)', desc: 'Ready in 15 minutes or less.' },
+    { id: 'readyMade', label: 'Ready to eat', desc: 'Store-bought grab-and-go. Little or no cooking.' },
   ];
 
   const MEALS = [
@@ -217,12 +251,14 @@
         carbs: macros[2],
         fiber: macros[3],
         med: false,
+        ready: false,
       },
       extra || {}
     );
   }
 
   const MED = { med: true };
+  const READY = { ready: true };
 
   const RECIPES = [
     // Breakfast
@@ -410,6 +446,44 @@
     r('s-energy-bites', 'No-bake energy bites', 'snack', 10, [],
       [['oats', 0.25], ['peanut_butter', 1], ['honey', 0.5], ['chia', 0.5], ['dark_chocolate', 0.25]], [230, 7, 26, 5]),
     r('s-cheese-walnuts', 'Cheese & walnuts', 'snack', 1, [], [['cheddar', 0.125], ['walnuts', 0.5]], [160, 6, 2, 1]),
+
+    // Ready-made, store-bought options. Nutrition is typical for the product type; check the label.
+    r('rb-yogurt-cup', 'Greek yogurt cup', 'breakfast', 1, [], [['yogurt_cup', 1]], [140, 15, 14, 0], READY),
+    r('rb-yogurt-cup-banana', 'Greek yogurt cup & banana', 'breakfast', 1, [], [['yogurt_cup', 1], ['banana', 1]], [245, 16, 41, 3], READY),
+    r('rb-belvita', 'belVita breakfast biscuits', 'breakfast', 1, [], [['belvita', 1]], [230, 4, 35, 3], READY),
+    r('rb-belvita-shake', 'belVita biscuits & protein shake', 'breakfast', 1, [], [['belvita', 1], ['protein_shake', 1]], [380, 34, 39, 4], READY),
+    r('rb-breakfast-sandwich', 'Frozen breakfast sandwich', 'breakfast', 3, ['microwave|oven|airfryer'], [['breakfast_sandwich', 1]], [260, 17, 26, 2], READY),
+    r('rb-instant-oatmeal', 'Instant oatmeal packet', 'breakfast', 3, ['microwave|stovetop'], [['oatmeal_packet', 1]], [160, 4, 32, 3], READY),
+    r('rb-waffles', 'Toaster waffles with peanut butter', 'breakfast', 4, ['toaster|oven|airfryer'], [['frozen_waffles', 2], ['peanut_butter', 1]], [275, 8, 33, 2], READY),
+    r('rb-protein-shake', 'Protein shake & banana', 'breakfast', 1, [], [['protein_shake', 1], ['banana', 1]], [265, 31, 32, 4], READY),
+
+    r('rl-hot-pocket', 'Hot Pocket', 'lunch', 3, ['microwave|oven|airfryer'], [['hot_pocket', 1]], [300, 11, 38, 2], READY),
+    r('rl-hot-pocket-apple', 'Hot Pocket & an apple', 'lunch', 3, ['microwave|oven|airfryer'], [['hot_pocket', 1], ['apple', 1]], [395, 11, 63, 6], READY),
+    r('rl-frozen-burrito', 'Frozen bean & cheese burrito', 'lunch', 3, ['microwave|oven|airfryer'], [['frozen_burrito', 1], ['salsa', 2]], [310, 10, 44, 5], READY),
+    r('rl-frozen-meal', 'Frozen entrée', 'lunch', 5, ['microwave'], [['frozen_meal', 1]], [300, 18, 40, 4], READY),
+    r('rl-soup-bowl', 'Microwavable soup bowl', 'lunch', 3, ['microwave'], [['soup_bowl', 1]], [200, 12, 22, 3], READY),
+    r('rl-deli-sandwich', 'Grab-and-go deli sandwich', 'lunch', 1, [], [['deli_sandwich', 1]], [450, 25, 45, 4], READY),
+    r('rl-ramen-cup', 'Instant ramen cup with egg', 'lunch', 4, ['microwave|stovetop'], [['ramen_cup', 1], ['egg_pack', 0.5]], [370, 12, 39, 2], READY),
+    r('rl-mac-cup', 'Microwave mac & cheese cup', 'lunch', 4, ['microwave'], [['mac_cup', 1], ['string_cheese', 1]], [330, 15, 41, 1], READY),
+
+    r('rd-personal-pizza', 'Frozen personal pizza', 'dinner', 15, ['oven|airfryer|microwave'], [['personal_pizza', 1]], [650, 25, 72, 4], READY),
+    r('rd-power-bowl', 'Frozen protein bowl', 'dinner', 5, ['microwave'], [['power_bowl', 1]], [330, 22, 40, 7], READY),
+    r('rd-rotisserie', 'Rotisserie chicken & bagged salad kit', 'dinner', 5, [], [['rotisserie_chicken', 0.25], ['salad_kit', 0.33]], [480, 40, 14, 4], READY),
+    r('rd-skillet-meal', 'Frozen skillet meal', 'dinner', 12, ['stovetop|microwave'], [['skillet_meal', 1]], [320, 15, 42, 4], READY),
+    r('rd-frozen-meal', 'Frozen entrée & side salad', 'dinner', 6, ['microwave'], [['frozen_meal', 1], ['salad_kit', 0.25]], [380, 20, 45, 6], READY),
+
+    r('rs-uncrustables', 'Uncrustables PB&J', 'snack', 1, [], [['uncrustables', 1]], [210, 6, 26, 2], READY),
+    r('rs-string-cheese', 'String cheese', 'snack', 1, [], [['string_cheese', 2]], [160, 14, 2, 0], READY),
+    r('rs-protein-bar', 'Protein bar', 'snack', 1, [], [['protein_bar', 1]], [200, 20, 22, 6], READY),
+    r('rs-granola-bar', 'Granola bar', 'snack', 1, [], [['granola_bar', 1]], [190, 4, 29, 2], READY),
+    r('rs-fruit-cup', 'Fruit cup', 'snack', 1, [], [['fruit_cup', 1]], [80, 1, 19, 1], READY),
+    r('rs-applesauce', 'Applesauce pouch', 'snack', 1, [], [['applesauce', 1]], [60, 0, 15, 1], READY),
+    r('rs-cheese-crackers', 'Cheese & crackers pack', 'snack', 1, [], [['cracker_pack', 1]], [180, 5, 18, 1], READY),
+    r('rs-jerky', 'Beef jerky', 'snack', 1, [], [['jerky', 1]], [80, 15, 3, 0], READY),
+    r('rs-hummus-pretzels', 'Hummus & pretzels cup', 'snack', 1, [], [['hummus_pretzels', 1]], [230, 7, 30, 4], READY),
+    r('rs-trail-mix', 'Trail mix pack', 'snack', 1, [], [['trail_mix', 1]], [170, 5, 14, 2], READY),
+    r('rs-egg-pack', 'Hard-boiled egg pack', 'snack', 1, [], [['egg_pack', 1]], [140, 12, 1, 0], READY),
+    r('rs-yogurt-cup', 'Greek yogurt cup', 'snack', 1, [], [['yogurt_cup', 1]], [140, 15, 14, 0], READY),
   ];
 
 
@@ -498,6 +572,14 @@
     's-celery-pb': '🥬',
     's-energy-bites': '🍪',
     's-cheese-walnuts': '🧀',
+    'rb-yogurt-cup': '🥛', 'rb-yogurt-cup-banana': '🍌', 'rb-belvita': '🍪', 'rb-belvita-shake': '🍪',
+    'rb-breakfast-sandwich': '🥪', 'rb-instant-oatmeal': '🥣', 'rb-waffles': '🧇', 'rb-protein-shake': '🥤',
+    'rl-hot-pocket': '🥟', 'rl-hot-pocket-apple': '🥟', 'rl-frozen-burrito': '🌯', 'rl-frozen-meal': '🍱',
+    'rl-soup-bowl': '🍜', 'rl-deli-sandwich': '🥪', 'rl-ramen-cup': '🍜', 'rl-mac-cup': '🧀',
+    'rd-personal-pizza': '🍕', 'rd-power-bowl': '🍱', 'rd-rotisserie': '🍗', 'rd-skillet-meal': '🥘', 'rd-frozen-meal': '🍱',
+    'rs-uncrustables': '🥪', 'rs-string-cheese': '🧀', 'rs-protein-bar': '🍫', 'rs-granola-bar': '🌾',
+    'rs-fruit-cup': '🍑', 'rs-applesauce': '🍏', 'rs-cheese-crackers': '🧀', 'rs-jerky': '🥩',
+    'rs-hummus-pretzels': '🥨', 'rs-trail-mix': '🥜', 'rs-egg-pack': '🥚', 'rs-yogurt-cup': '🥛',
   };
   RECIPES.forEach((rec) => {
     rec.icon = RECIPE_ICONS[rec.id] || '🍽️';
@@ -505,7 +587,7 @@
 
   const STYLE_ICONS = {
     balanced: '⚖️', highProtein: '💪', highFiber: '🌾', lowCarb: '🥑', keto: '🥓', moneySaver: '💰', lowCalorie: '🪶',
-    vegetarian: '🥕', vegan: '🌱', pescatarian: '🐟', glutenFree: '🚫', heartHealthy: '❤️', mediterranean: '🫒', quick: '⏱️',
+    vegetarian: '🥕', vegan: '🌱', pescatarian: '🐟', glutenFree: '🚫', heartHealthy: '❤️', mediterranean: '🫒', quick: '⏱️', readyMade: '📦',
   };
   STYLES.forEach((st) => {
     st.icon = STYLE_ICONS[st.id] || '🍽️';
@@ -527,6 +609,7 @@
   const CATEGORY_ICONS = {
     Produce: '🥬', 'Meat & Seafood': '🥩', 'Dairy & Eggs': '🥛', 'Plant Protein': '🫘', 'Bread & Grains': '🍞',
     'Canned & Dry Goods': '🥫', Frozen: '🧊', 'Nuts, Seeds & Snacks': '🥜', 'Oils, Spices & Condiments': '🧂',
+    'Ready-to-Eat': '📦',
   };
 
   // Store price tiers, guessed from the store or brand name. Base prices above are "standard".
