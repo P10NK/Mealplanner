@@ -1,0 +1,8 @@
+# Lets Cloudflare build the Kroger price worker from the repository root as well as from worker/.
+# Keep in step with worker/wrangler.toml. See README, "Live Kroger prices".
+name = "mealplanner"
+main = "worker/index.mjs"
+compatibility_date = "2026-09-01"
+
+[vars]
+ALLOWED_ORIGIN = "*"
