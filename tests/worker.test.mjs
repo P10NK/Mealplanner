@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { handle, resetToken, cleanTerm, shapeProduct } from '../worker/index.mjs';
+import { handle, resetToken, cleanTerm, shapeProduct, isShoppable } from '../worker/index.mjs';
 
 const env = { KROGER_CLIENT_ID: 'id', KROGER_CLIENT_SECRET: 'secret' };
 
@@ -68,4 +68,13 @@ test('search terms and products are cleaned up', () => {
   assert.equal(cleanTerm('a b c d e f g h i j').split(' ').length, 8);
   assert.equal(shapeProduct({ items: [{ price: { regular: 0, promo: 0 } }] }), null);
   assert.equal(shapeProduct({ description: 'Milk', items: [{ size: '1 gal', price: { regular: 3.29, promo: 0 } }] }).price, 3.29);
+});
+
+test('worker hides Kroger back-of-house locations', () => {
+  for (const name of ['Kroger - Spoke Forecast', 'Kroger - Forecast Shed', 'Kroger - Zero Warehouse', 'Harris Teeter - - Unused Spoke', 'Harris Teeter - Spoke Forecast - HT Trans']) {
+    assert.equal(isShoppable({ name }), false, name);
+  }
+  for (const name of ['Kroger - Kroger On the Rhine', 'Kroger Marketplace - Oakley OH Marketplace', 'Kroger - Bellevue Kroger']) {
+    assert.equal(isShoppable({ name }), true, name);
+  }
 });
