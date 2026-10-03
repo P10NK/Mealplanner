@@ -12,7 +12,7 @@
   const defaults = () => ({
     prefs: {
       styles: ['balanced'],
-      appliances: ['stovetop', 'oven', 'microwave'],
+      appliances: ['stovetop', 'oven', 'microwave', 'toaster'],
       budget: 100,
       servings: 1,
     },
@@ -36,6 +36,9 @@
       if (saved && typeof saved === 'object') {
         const merged = Object.assign(base, saved);
         merged.prefs = Object.assign(defaults().prefs, saved.prefs || {});
+        // Drop styles that are no longer offered so they can't filter meals invisibly.
+        merged.prefs.styles = (merged.prefs.styles || []).filter((id) => D.STYLES.some((s) => s.id === id));
+        if (!merged.prefs.styles.length) merged.prefs.styles = ['balanced'];
         merged.plan = Object.assign(P.emptyPlan(), saved.plan || {});
         if (!D.DAYS.includes(merged.day)) merged.day = D.DAYS[0];
         return merged;
@@ -132,6 +135,7 @@
               if (e.target.checked) set.add(a.id);
               else set.delete(a.id);
               state.prefs.appliances = [...set];
+              renderKitchenSummary();
               update();
             },
           }),
@@ -141,10 +145,16 @@
       )
     );
 
+    renderKitchenSummary();
     $('budget').value = state.prefs.budget;
     $('servings').value = state.prefs.servings;
     $('stat-recipes').textContent = D.RECIPES.length;
-    $('stat-styles').textContent = D.STYLES.length;
+    $('stat-ready').textContent = D.RECIPES.filter((r) => r.ready).length;
+  }
+
+  function renderKitchenSummary() {
+    const names = D.APPLIANCES.filter((a) => state.prefs.appliances.includes(a.id)).map((a) => a.label);
+    $('kitchen-summary').textContent = names.length ? names.join(', ') : 'No-cook only';
   }
 
   function toggleStyle(id, on) {
@@ -185,20 +195,6 @@
     $('meal-progress').textContent = filled === 21 ? 'Week complete' : `${21 - filled} to go`;
     setRing($('meal-ring'), filled / 21);
 
-    const days = D.DAYS.map((d) => P.dayTotals(state.plan, d)).filter((t) => t.meals);
-    const avg = (k) => (days.length ? Math.round(days.reduce((s, t) => s + t[k], 0) / days.length) : 0);
-    // Averages cover only the days with meals picked, and the title says how many.
-    $('avg-title').textContent =
-      days.length && days.length < 7
-        ? `Daily average per person (${days.length} planned day${days.length === 1 ? '' : 's'})`
-        : 'Daily average per person';
-    const stat = (label, value, unit) => h('div', null, h('dt', null, label), h('dd', null, value, unit ? h('small', null, ` ${unit}`) : null));
-    $('avg-grid').replaceChildren(
-      stat('Calories', days.length ? avg('kcal') : '–', 'kcal'),
-      stat('Protein', days.length ? avg('protein') : '–', 'g'),
-      stat('Carbs', days.length ? avg('carbs') : '–', 'g'),
-      stat('Fiber', days.length ? avg('fiber') : '–', 'g')
-    );
   }
 
   function renderTabs() {
@@ -231,25 +227,11 @@
     save();
     renderTabs();
     renderDay();
-    renderChart();
     renderWeekGrid();
   }
 
   function recipeLabel(rec) {
     return `${rec.name} · ${P.money(P.recipeCost(rec) * servings())}`;
-  }
-
-  // Bars are scaled against a generous per-meal reference so they stay comparable.
-  const MACRO_REF = { protein: 50, carbs: 90, fiber: 20 };
-
-  function macroBar(key, label, value) {
-    return h(
-      'div',
-      { class: `macro ${key}` },
-      h('span', null, label),
-      h('span', { class: 'track' }, h('span', { class: 'fill', style: `display:block;width:${Math.min(100, (value / MACRO_REF[key]) * 100)}%` })),
-      h('b', null, `${value}g`)
-    );
   }
 
   function renderDay() {
@@ -279,7 +261,7 @@
             : `No ${meal.label.toLowerCase()} matches. Try fewer styles or more appliances.`
         )
       );
-      options.forEach((rec) => select.append(h('option', { value: rec.id }, recipeLabel(rec))));
+      appendOptions(select, options, recipeLabel);
       if (current && !options.includes(current)) {
         select.append(
           h('optgroup', { label: "Doesn't fit your current plan" }, h('option', { value: current.id }, recipeLabel(current)))
@@ -300,21 +282,13 @@
             h('span', { class: 'chip cost' }, `${P.money(P.recipeCost(current) * servings())}${servings() > 1 ? ` for ${servings()}` : ''}`),
             current.ready ? h('span', { class: 'chip fit' }, '📦 Store-bought') : null,
             h('span', { class: 'chip' }, `⏱ ${current.time} min`),
-            h('span', { class: 'chip' }, `🔥 ${current.kcal} kcal`),
             fits ? null : h('span', { class: 'chip warn' }, "Doesn't match your style or appliances")
-          ),
-          h(
-            'div',
-            { class: 'macros' },
-            macroBar('protein', 'Protein', current.protein),
-            macroBar('carbs', 'Carbs', current.carbs),
-            macroBar('fiber', 'Fiber', current.fiber)
           ),
           h(
             'div',
             { class: 'card-foot' },
             h('span', { class: 'needs' }, needs.length ? `Needs: ${needs.join(', ')}` : 'No cooking needed'),
-            h('button', { type: 'button', class: 'btn small', onclick: () => openRecipe(current.id) }, '📖 View recipe')
+            h('button', { type: 'button', class: 'btn small', onclick: () => openRecipe(current.id) }, '📖 How to make it')
           ),
         ];
       }
@@ -343,118 +317,62 @@
         h(
           'span',
           { class: 'day-sum' },
-          t.meals
-            ? `${t.kcal} kcal · ${t.protein}g protein · ${t.fiber}g fiber · ${P.money(t.cost * servings())}`
-            : 'Nothing planned yet'
+          t.meals ? `${P.money(t.cost * servings())} for the day` : 'Nothing planned yet'
         )
       ),
       h('div', { class: 'meal-cards' }, cards)
     );
   }
 
-  // Stacked calories per day, one segment per meal.
-  function renderChart() {
-    const SVGNS = 'http://www.w3.org/2000/svg';
-    const s = (tag, attrs, text) => {
-      const el = document.createElementNS(SVGNS, tag);
-      Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
-      if (text != null) el.textContent = text;
-      return el;
+  // Grab-and-go items first, then things you cook, so the long list is easy to scan.
+  function appendOptions(select, options, label) {
+    const ready = options.filter((r) => r.ready);
+    const cook = options.filter((r) => !r.ready);
+    const add = (title, list) => {
+      if (!list.length) return;
+      select.append(h('optgroup', { label: title }, list.map((rec) => h('option', { value: rec.id }, label(rec)))));
     };
-    const W = 700;
-    const H = 230;
-    const left = 40;
-    const right = 10;
-    const top = 22;
-    const bottom = 30;
-    const totals = D.DAYS.map((d) => P.dayTotals(state.plan, d).kcal);
-    const maxK = Math.max(2500, ...totals);
-    const step = maxK > 3000 ? 1000 : 500;
-    const yMax = Math.ceil(maxK / step) * step;
-    const y = (v) => top + (H - top - bottom) * (1 - v / yMax);
-    const band = (W - left - right) / 7;
-    const bw = Math.min(56, band * 0.6);
-    const svg = s('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Calories per day, stacked by meal' });
-    for (let v = 0; v <= yMax; v += step) {
-      svg.append(s('line', { x1: left, x2: W - right, y1: y(v), y2: y(v), class: 'grid-line' }));
-      svg.append(s('text', { x: left - 6, y: y(v) + 4, 'text-anchor': 'end', class: 'axis-label' }, v));
-    }
-    D.DAYS.forEach((day, i) => {
-      const cx = left + band * i + band / 2;
-      let acc = 0;
-      D.MEALS.forEach((m) => {
-        const rec = P.getRecipe(state.plan[day][m.id]);
-        if (!rec) return;
-        const y0 = y(acc);
-        const y1 = y(acc + rec.kcal);
-        const r = s('rect', { x: cx - bw / 2, y: y1, width: bw, height: Math.max(0, y0 - y1 - 1.5), rx: 4, class: `seg-${m.id}` });
-        r.append(s('title', {}, `${day} ${m.label.toLowerCase()}: ${rec.name}, ${rec.kcal} kcal`));
-        svg.append(r);
-        acc += rec.kcal;
-      });
-      if (acc) svg.append(s('text', { x: cx, y: y(acc) - 6, 'text-anchor': 'middle', class: 'total-label' }, acc));
-      svg.append(s('text', { x: cx, y: H - 10, 'text-anchor': 'middle', class: 'day-label' }, day.slice(0, 3)));
-      const hit = s('rect', { x: cx - band / 2, y: top, width: band, height: H - top - bottom, class: 'bar-hit' });
-      hit.addEventListener('click', () => selectDay(day));
-      svg.append(hit);
-    });
-    const legend = h(
-      'div',
-      { class: 'legend' },
-      D.MEALS.map((m) => h('span', { style: `--k: var(--c-${m.id})` }, m.label))
-    );
-    $('kcal-chart').replaceChildren(legend, svg);
+    add('Grab & go', ready);
+    add('Cook it yourself', cook);
   }
 
-  // 7 days x 4 slots, every cell a dropdown. Same plan as the day panel above.
+  // Read-only overview of the week. Tapping a meal opens that day above, focused on that slot.
   function renderWeekGrid() {
-    const optionsByMeal = {};
-    D.MEALS.forEach((m) => {
-      optionsByMeal[m.id] = P.recipeOptions(m.id, state.prefs);
-    });
     $('week-grid').replaceChildren(
-      ...D.DAYS.map((day) => {
-        const mainDone = P.isDayMainComplete(state.plan, day);
-        return h(
+      ...D.DAYS.map((day) =>
+        h(
           'div',
           { class: 'week-day' + (day === state.day ? ' active' : '') },
-          h('button', { type: 'button', class: 'week-day-name', onclick: () => selectDay(day) }, day),
+          h('button', { type: 'button', class: 'week-day-name', onclick: () => jumpTo(day) }, day),
           D.MEALS.map((meal) => {
             const current = P.getRecipe(state.plan[day][meal.id]);
-            const options = optionsByMeal[meal.id];
-            const locked = meal.id === 'snack' && !mainDone;
-            const sel = h('select', {
-              disabled: locked,
-              title: current ? current.name : '',
-              'aria-label': `${day} ${meal.label.toLowerCase()}`,
-              onchange: (e) => {
-                state.plan[day][meal.id] = e.target.value || null;
-                update();
-              },
-            });
-            sel.append(h('option', { value: '' }, locked ? 'After 3 meals' : meal.id === 'snack' ? 'Optional' : '—'));
-            options.forEach((rec) => sel.append(h('option', { value: rec.id }, rec.name)));
-            if (current && !options.includes(current)) {
-              sel.append(h('optgroup', { label: "Doesn't fit your plan" }, h('option', { value: current.id }, current.name)));
-            }
-            sel.value = current ? current.id : '';
             return h(
-              'label',
-              { class: `wcell ${meal.id}` + (current && !P.fitsPrefs(current, state.prefs) ? ' misfit' : '') },
+              'button',
+              {
+                type: 'button',
+                class: `wcell ${meal.id}` + (current ? '' : ' empty'),
+                'aria-label': `${day} ${meal.label.toLowerCase()}: ${current ? current.name : 'not picked'}. Change it`,
+                onclick: () => jumpTo(day, meal.id),
+              },
               h('b', null, meal.label),
               h(
                 'span',
                 { class: 'wrow' },
-                current
-                  ? h('button', { type: 'button', class: 'wicon', title: `Recipe for ${current.name}`, 'aria-label': `Open recipe for ${current.name}`, onclick: (e) => { e.preventDefault(); openRecipe(current.id); } }, current.icon)
-                  : h('span', { class: 'wicon', 'aria-hidden': 'true' }, '·'),
-                sel
+                h('span', { class: 'wicon', 'aria-hidden': 'true' }, current ? current.icon : '+'),
+                h('span', { class: 'wname' }, current ? current.name : meal.id === 'snack' ? 'Optional' : 'Pick one')
               )
             );
           })
-        );
-      })
+        )
+      )
     );
+  }
+
+  function jumpTo(day, mealId) {
+    selectDay(day);
+    $('day-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const sel = mealId && $(`slot-${mealId}`);
+    if (sel && !sel.disabled) sel.focus({ preventScroll: true });
   }
 
   // ---------- Recipe view ----------
@@ -484,10 +402,6 @@
             { class: 'chips' },
             rec.ready ? h('span', { class: 'chip fit' }, '📦 Store-bought') : null,
             h('span', { class: 'chip' }, `⏱ ${rec.time} min`),
-            h('span', { class: 'chip' }, `🔥 ${rec.kcal} kcal`),
-            h('span', { class: 'chip' }, `${rec.protein}g protein`),
-            h('span', { class: 'chip' }, `${rec.carbs}g carbs`),
-            h('span', { class: 'chip' }, `${rec.fiber}g fiber`),
             h('span', { class: 'chip cost' }, `${P.money(P.recipeCost(rec) * n)} for ${n}`)
           )
         )
@@ -505,7 +419,8 @@
             P.recipeIngredients(rec, n).map((l) => h('li', null, h('b', null, l.amount), ` ${l.name}`, l.staple ? h('small', null, ' (pantry)') : null))
           ),
           h('p', { class: 'needs' }, needs.length ? `You'll need: ${needs.join(', ')}` : 'No cooking needed'),
-          styles.length ? h('div', { class: 'chips' }, styles.map((s) => h('span', { class: 'chip fit' }, `${s.icon} ${s.label}`))) : null
+          styles.length ? h('div', { class: 'chips' }, styles.map((s) => h('span', { class: 'chip fit' }, `${s.icon} ${s.label}`))) : null,
+          h('p', { class: 'needs' }, `About ${rec.kcal} calories and ${rec.protein}g protein per person.`)
         ),
         h(
           'section',
@@ -514,7 +429,7 @@
           h('ol', { class: 'step-list' }, steps.map((t) => h('li', null, t)))
         )
       ),
-      h('p', { class: 'note' }, 'Nutrition is per person. Amounts and cost scale with the number of people eating.')
+      h('p', { class: 'note' }, rec.ready ? 'Directions are typical for this product. Follow the box if it says something different.' : 'Amounts and cost scale with the number of people eating.')
     );
     if (typeof dlg.showModal === 'function') {
       if (!dlg.open) dlg.showModal();
@@ -631,7 +546,7 @@
     const over = budget > 0 && total > budget;
     $('over-budget').hidden = !over;
     if (over) {
-      $('over-budget').textContent = `This plan is about ${P.money(total - budget)} over your weekly budget. Swap a few meals for cheaper ones, try the Money saver style, or shop at a discount store.`;
+      $('over-budget').textContent = `This plan is about ${P.money(total - budget)} over your weekly budget. Swap a few meals for cheaper ones, try Cheap eats, or shop at a discount store.`;
     }
 
     document.querySelectorAll('.seg-btn').forEach((b) => b.classList.toggle('on', b.dataset.view === state.view));
@@ -840,7 +755,6 @@
     renderBudget();
     renderTabs();
     renderDay();
-    renderChart();
     renderWeekGrid();
     renderShop();
   }

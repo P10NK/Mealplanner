@@ -19,12 +19,12 @@
           <p class="eyebrow">Plan · Cook · Shop</p>
           <h1>Your week of meals, sorted.</h1>
           <p class="tagline">
-            Pick how you want to eat, tell us what's in your kitchen and what you can spend. Fill Monday to Sunday, then
-            get one shopping list for the stores near you.
+            Pick your meals for Monday to Sunday, from Pop-Tarts and pizza rolls to easy home cooking. Then get one
+            shopping list for the stores near you.
           </p>
           <ul class="hero-stats">
             <li><strong id="stat-recipes">83</strong> recipes</li>
-            <li><strong id="stat-styles">14</strong> plan styles</li>
+            <li><strong id="stat-ready">68</strong> grab-and-go</li>
             <li><strong>7</strong> days, 28 meals</li>
           </ul>
         </div>
@@ -56,8 +56,8 @@
         <div class="panel-head">
           <span class="step" aria-hidden="true">1</span>
           <div>
-            <h2 id="prefs-title">Your plan</h2>
-            <p class="sub">Pick one style, or combine a few. Every meal you see will match all of them.</p>
+            <h2 id="prefs-title">What do you like?</h2>
+            <p class="sub">Pick one, or mix a couple. Anything goes is fine too.</p>
           </div>
         </div>
 
@@ -67,11 +67,14 @@
         </fieldset>
 
         <div class="prefs-row">
-          <fieldset class="appliances">
-            <legend>What's in your kitchen?</legend>
-            <div class="appliance-grid" id="appliance-checks"></div>
-            <p class="hint">No-cook meals are always on the menu.</p>
-          </fieldset>
+          <details class="appliances">
+            <summary><span class="kitchen-title">Your kitchen</span> <span id="kitchen-summary"></span> <span class="kitchen-edit">Change</span></summary>
+            <fieldset>
+              <legend class="sr-only">Cooking appliances you have</legend>
+              <div class="appliance-grid" id="appliance-checks"></div>
+              <p class="hint">No-cook meals are always on the menu.</p>
+            </fieldset>
+          </details>
 
           <div class="money-box">
             <label class="field" for="budget">
@@ -96,7 +99,7 @@
           <span class="step" aria-hidden="true">2</span>
           <div>
             <h2 id="week-title">Your week</h2>
-            <p class="sub">Pick a day, then choose breakfast, lunch and dinner. A snack unlocks once those three are set.</p>
+            <p class="sub">Pick a day, then choose breakfast, lunch and dinner. Or tap auto-fill and swap what you don't like.</p>
           </div>
         </div>
 
@@ -111,10 +114,6 @@
             <div class="dial-text"><strong id="meal-count">0</strong><span>of 21 meals</span></div>
             <div class="dial-cap"><span id="meal-progress"></span></div>
           </div>
-          <div class="avg-card">
-            <p class="avg-title" id="avg-title">Daily average per person</p>
-            <dl class="avg-grid" id="avg-grid"></dl>
-          </div>
         </div>
 
         <div class="actions">
@@ -125,11 +124,8 @@
         <div class="day-tabs" role="tablist" id="day-tabs" aria-label="Days of the week"></div>
         <div class="day-panel" id="day-panel" role="tabpanel"></div>
 
-        <h3 class="sub-title">Calories by day</h3>
-        <div class="chart" id="kcal-chart"></div>
-
-        <h3 class="sub-title">Whole week</h3>
-        <p class="hint">Change any meal right here, or tap a day name to see its details above.</p>
+        <h3 class="sub-title">Your week at a glance</h3>
+        <p class="hint">Tap any meal to change it.</p>
         <div class="week-grid" id="week-grid"></div>
       </section>
 
