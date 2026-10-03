@@ -1,0 +1,11 @@
+{
+  "name": "mealplanner",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Weekly meal planner with plan styles, budget tracking, nearby store search and a shopping list.",
+  "scripts": {
+    "start": "python3 -m http.server 8000",
+    "test": "node --test"
+  },
+  "license": "MIT"
+}
