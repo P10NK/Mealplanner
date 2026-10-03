@@ -30,7 +30,7 @@ Kroger's API needs a private key, so it can't be called straight from the web pa
    npx wrangler secret put KROGER_CLIENT_ID      # paste the client ID
    npx wrangler secret put KROGER_CLIENT_SECRET  # paste the client secret
    ```
-   `deploy` prints the worker's address, such as `https://mealplanner-prices.<you>.workers.dev`.
+   `deploy` prints the worker's address, such as `https://mealplanner.<you>.workers.dev`.
 3. Put that address in `js/config.js` as `priceApi`, and optionally set `ALLOWED_ORIGIN` in `worker/wrangler.toml` to your site's address so only your site can use it.
 
 The keys only ever live in Cloudflare's secret store. Never put them in this repository. The worker caches each price for 6 hours; a store's full price lookup is about 250 Kroger requests, well inside Kroger's free daily limit for personal use.

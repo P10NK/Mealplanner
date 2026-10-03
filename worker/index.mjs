@@ -63,6 +63,14 @@ async function kroger(path, env, fetchImpl) {
   return res.json();
 }
 
+// Kroger also lists back-of-house sites (warehouses, forecast and delivery hubs)
+// that nobody can shop at; their names give them away.
+const NOT_A_STORE = /\b(spoke|forecast|shed|warehouse|unused|fulfillment|trans)\b/i;
+
+export function isShoppable(l) {
+  return !NOT_A_STORE.test(`${l.name || ''}`);
+}
+
 export function shapeLocation(l) {
   const a = l.address || {};
   return {
@@ -98,9 +106,9 @@ async function locations(url, env, fetchImpl) {
   const lon = Number(url.searchParams.get('lon'));
   const radius = Math.min(100, Math.max(1, Number(url.searchParams.get('radius')) || 10));
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) throw new HttpError(400, 'lat and lon are required');
-  const q = `filter.lat.near=${lat}&filter.lon.near=${lon}&filter.radiusInMiles=${radius}&filter.limit=20`;
+  const q = `filter.lat.near=${lat}&filter.lon.near=${lon}&filter.radiusInMiles=${radius}&filter.limit=30`;
   const json = await kroger(`/locations?${q}`, env, fetchImpl);
-  return { stores: (json.data || []).map(shapeLocation) };
+  return { stores: (json.data || []).filter(isShoppable).map(shapeLocation).slice(0, 20) };
 }
 
 // Kroger wants 3+ characters and at most 8 words.

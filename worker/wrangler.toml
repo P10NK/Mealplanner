@@ -1,5 +1,5 @@
 # Cloudflare Worker that serves Kroger prices to the meal planner. See README, "Live Kroger prices".
-name = "mealplanner-prices"
+name = "mealplanner"
 main = "index.mjs"
 compatibility_date = "2026-09-01"
 
