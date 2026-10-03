@@ -4,6 +4,7 @@
 
   const D = window.MPData;
   const P = window.MPPlanner;
+  const STEPS = window.MPSteps || {};
   const STORAGE_KEY = 'mealplanner:v1';
   const OVERPASS_URLS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
   const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search';
@@ -85,30 +86,43 @@
 
   // ---------- Step 1: preferences ----------
 
+  function tile(cls, input, icon, name, desc) {
+    return h(
+      'label',
+      { class: `tile ${cls}`, title: desc || null },
+      input,
+      h(
+        'span',
+        { class: 'tile-body' },
+        h('span', { class: 'tile-icon', 'aria-hidden': 'true' }, icon),
+        h('span', { class: 'tile-name' }, name),
+        desc ? h('span', { class: 'tile-desc' }, desc) : null
+      )
+    );
+  }
+
   function renderPrefs() {
-    const chips = $('style-chips');
-    chips.replaceChildren(
+    $('style-chips').replaceChildren(
       ...D.STYLES.map((s) =>
-        h(
-          'label',
-          { class: 'chip', title: s.desc },
+        tile(
+          'style',
           h('input', {
             type: 'checkbox',
             value: s.id,
             checked: state.prefs.styles.includes(s.id),
             onchange: (e) => toggleStyle(s.id, e.target.checked),
           }),
-          h('span', null, s.label)
+          s.icon,
+          s.label,
+          s.desc
         )
       )
     );
 
-    const checks = $('appliance-checks');
-    checks.replaceChildren(
+    $('appliance-checks').replaceChildren(
       ...D.APPLIANCES.map((a) =>
-        h(
-          'label',
-          null,
+        tile(
+          'appl',
           h('input', {
             type: 'checkbox',
             value: a.id,
@@ -121,6 +135,7 @@
               update();
             },
           }),
+          a.icon,
           a.label
         )
       )
@@ -128,6 +143,8 @@
 
     $('budget').value = state.prefs.budget;
     $('servings').value = state.prefs.servings;
+    $('stat-recipes').textContent = D.RECIPES.length;
+    $('stat-styles').textContent = D.STYLES.length;
   }
 
   function toggleStyle(id, on) {
@@ -143,38 +160,67 @@
 
   // ---------- Step 2: week ----------
 
+  const RING = 2 * Math.PI * 50;
+
+  function setRing(el, fraction) {
+    el.style.strokeDashoffset = String(RING * (1 - Math.max(0, Math.min(1, fraction))));
+  }
+
   function renderBudget() {
     const cost = P.weeklyCost(state.plan, servings());
     const budget = Number(state.prefs.budget) || 0;
     const over = budget > 0 && cost > budget;
-    $('budget-text').textContent = `Estimated groceries: ${P.money(cost)}${budget ? ` of ${P.money(budget)}` : ''}`;
+    $('budget-text').textContent = `${P.money(cost)}${budget ? ` of ${P.money(budget)}` : ''}`;
     $('budget-left').textContent = budget
       ? over
         ? `${P.money(cost - budget)} over budget`
         : `${P.money(budget - cost)} left`
       : 'No budget set';
-    $('budget-fill').style.width = budget ? `${Math.min(100, (cost / budget) * 100)}%` : '0%';
+    $('budget-pct').textContent = budget ? `${Math.round((cost / budget) * 100)}%` : '–';
+    setRing($('budget-ring'), budget ? cost / budget : 0);
     $('budget-meter').classList.toggle('over', over);
+
     const filled = P.countMainFilled(state.plan);
-    $('meal-progress').textContent = `${filled} of 21 main meals planned`;
+    $('meal-count').textContent = filled;
+    $('meal-progress').textContent = filled === 21 ? 'Week complete' : `${21 - filled} to go`;
+    setRing($('meal-ring'), filled / 21);
+
+    const days = D.DAYS.map((d) => P.dayTotals(state.plan, d)).filter((t) => t.meals);
+    const avg = (k) => (days.length ? Math.round(days.reduce((s, t) => s + t[k], 0) / days.length) : 0);
+    // Averages cover only the days with meals picked, and the title says how many.
+    $('avg-title').textContent =
+      days.length && days.length < 7
+        ? `Daily average per person (${days.length} planned day${days.length === 1 ? '' : 's'})`
+        : 'Daily average per person';
+    const stat = (label, value, unit) => h('div', null, h('dt', null, label), h('dd', null, value, unit ? h('small', null, ` ${unit}`) : null));
+    $('avg-grid').replaceChildren(
+      stat('Calories', days.length ? avg('kcal') : '–', 'kcal'),
+      stat('Protein', days.length ? avg('protein') : '–', 'g'),
+      stat('Carbs', days.length ? avg('carbs') : '–', 'g'),
+      stat('Fiber', days.length ? avg('fiber') : '–', 'g')
+    );
   }
 
   function renderTabs() {
     $('day-tabs').replaceChildren(
       ...D.DAYS.map((day) => {
-        const dots = P.MAIN_MEALS.map((m) => h('span', { class: 'dot' + (state.plan[day][m] ? ' on' : '') }));
+        const plates = D.MEALS.filter((m) => m.id !== 'snack' || state.plan[day].snack).map((m) => {
+          const rec = P.getRecipe(state.plan[day][m.id]);
+          return rec ? h('span', null, rec.icon) : h('span', { class: 'empty-dot' });
+        });
+        const done = P.isDayMainComplete(state.plan, day);
         return h(
           'button',
           {
             type: 'button',
             role: 'tab',
-            class: 'day-tab',
+            class: 'day-tab' + (done ? ' complete' : ''),
             'aria-selected': String(day === state.day),
             'aria-label': `${day}, ${P.MAIN_MEALS.filter((m) => state.plan[day][m]).length} of 3 meals planned`,
             onclick: () => selectDay(day),
           },
-          day.slice(0, 3),
-          h('span', { class: 'dots', 'aria-hidden': 'true' }, dots)
+          h('span', { class: 'd' }, day.slice(0, 3)),
+          h('span', { class: 'plates', 'aria-hidden': 'true' }, plates)
         );
       })
     );
@@ -185,6 +231,7 @@
     save();
     renderTabs();
     renderDay();
+    renderChart();
     renderWeekGrid();
   }
 
@@ -192,14 +239,26 @@
     return `${rec.name} · ${P.money(P.recipeCost(rec) * servings())}`;
   }
 
+  // Bars are scaled against a generous per-meal reference so they stay comparable.
+  const MACRO_REF = { protein: 50, carbs: 90, fiber: 20 };
+
+  function macroBar(key, label, value) {
+    return h(
+      'div',
+      { class: `macro ${key}` },
+      h('span', null, label),
+      h('span', { class: 'track' }, h('span', { class: 'fill', style: `display:block;width:${Math.min(100, (value / MACRO_REF[key]) * 100)}%` })),
+      h('b', null, `${value}g`)
+    );
+  }
+
   function renderDay() {
     const day = state.day;
     const mainDone = P.isDayMainComplete(state.plan, day);
     const panel = $('day-panel');
     panel.setAttribute('aria-label', day);
-    const slots = D.MEALS.map((meal) => {
-      const isSnack = meal.id === 'snack';
-      const locked = isSnack && !mainDone;
+    const cards = D.MEALS.map((meal) => {
+      const locked = meal.id === 'snack' && !mainDone;
       const current = P.getRecipe(state.plan[day][meal.id]);
       const options = P.recipeOptions(meal.id, state.prefs);
       const select = h('select', {
@@ -228,37 +287,122 @@
       }
       select.value = current ? current.id : '';
 
-      let info = null;
+      let details = null;
       if (locked) {
-        info = h('div', { class: 'slot-info' }, 'Snacks unlock once breakfast, lunch and dinner are picked for this day.');
+        details = h('p', { class: 'needs' }, 'Unlocks once breakfast, lunch and dinner are picked for this day.');
       } else if (current) {
         const fits = P.fitsPrefs(current, state.prefs);
         const needs = current.appliances.map((req) => req.split('|').map(applianceLabel).join(' or '));
-        info = h(
-          'div',
-          { class: 'slot-info' },
-          h('span', null, `${current.time} min`),
-          h('span', null, `${current.kcal} kcal`),
-          h('span', null, `${current.protein}g protein`),
-          h('span', null, `${current.carbs}g carbs`),
-          h('span', null, `${current.fiber}g fiber`),
-          h('span', null, `${P.money(P.recipeCost(current) * servings())} for ${servings()}`),
-          h('span', null, needs.length ? `Needs: ${needs.join(', ')}` : 'No cooking'),
-          fits ? null : h('span', { class: 'warn' }, "Doesn't match your current style or appliances")
-        );
-      } else if (!options.length) {
-        info = null;
+        details = [
+          h(
+            'div',
+            { class: 'chips' },
+            h('span', { class: 'chip cost' }, `${P.money(P.recipeCost(current) * servings())}${servings() > 1 ? ` for ${servings()}` : ''}`),
+            h('span', { class: 'chip' }, `⏱ ${current.time} min`),
+            h('span', { class: 'chip' }, `🔥 ${current.kcal} kcal`),
+            fits ? null : h('span', { class: 'chip warn' }, "Doesn't match your style or appliances")
+          ),
+          h(
+            'div',
+            { class: 'macros' },
+            macroBar('protein', 'Protein', current.protein),
+            macroBar('carbs', 'Carbs', current.carbs),
+            macroBar('fiber', 'Fiber', current.fiber)
+          ),
+          h(
+            'div',
+            { class: 'card-foot' },
+            h('span', { class: 'needs' }, needs.length ? `Needs: ${needs.join(', ')}` : 'No cooking needed'),
+            h('button', { type: 'button', class: 'btn small', onclick: () => openRecipe(current.id) }, '📖 View recipe')
+          ),
+        ];
       }
 
       return h(
         'div',
-        { class: 'slot' + (locked ? ' disabled' : '') },
-        h('label', { class: 'slot-label', for: `slot-${meal.id}` }, meal.label),
-        select,
-        info
+        { class: `meal-card ${meal.id}` + (locked ? ' locked' : '') },
+        current
+          ? h('button', { type: 'button', class: 'plate', title: `Recipe for ${current.name}`, 'aria-label': `Open recipe for ${current.name}`, onclick: () => openRecipe(current.id) }, current.icon)
+          : h('div', { class: 'plate empty', 'aria-hidden': 'true' }, meal.icon),
+        h(
+          'div',
+          { class: 'meal-main' },
+          h('label', { class: 'meal-label', for: `slot-${meal.id}` }, meal.label),
+          select,
+          details
+        )
       );
     });
-    panel.replaceChildren(h('h3', null, day), ...slots);
+    const t = P.dayTotals(state.plan, day);
+    panel.replaceChildren(
+      h(
+        'div',
+        { class: 'day-panel-head' },
+        h('h3', null, day),
+        h(
+          'span',
+          { class: 'day-sum' },
+          t.meals
+            ? `${t.kcal} kcal · ${t.protein}g protein · ${t.fiber}g fiber · ${P.money(t.cost * servings())}`
+            : 'Nothing planned yet'
+        )
+      ),
+      h('div', { class: 'meal-cards' }, cards)
+    );
+  }
+
+  // Stacked calories per day, one segment per meal.
+  function renderChart() {
+    const SVGNS = 'http://www.w3.org/2000/svg';
+    const s = (tag, attrs, text) => {
+      const el = document.createElementNS(SVGNS, tag);
+      Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
+      if (text != null) el.textContent = text;
+      return el;
+    };
+    const W = 700;
+    const H = 230;
+    const left = 40;
+    const right = 10;
+    const top = 22;
+    const bottom = 30;
+    const totals = D.DAYS.map((d) => P.dayTotals(state.plan, d).kcal);
+    const maxK = Math.max(2500, ...totals);
+    const step = maxK > 3000 ? 1000 : 500;
+    const yMax = Math.ceil(maxK / step) * step;
+    const y = (v) => top + (H - top - bottom) * (1 - v / yMax);
+    const band = (W - left - right) / 7;
+    const bw = Math.min(56, band * 0.6);
+    const svg = s('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Calories per day, stacked by meal' });
+    for (let v = 0; v <= yMax; v += step) {
+      svg.append(s('line', { x1: left, x2: W - right, y1: y(v), y2: y(v), class: 'grid-line' }));
+      svg.append(s('text', { x: left - 6, y: y(v) + 4, 'text-anchor': 'end', class: 'axis-label' }, v));
+    }
+    D.DAYS.forEach((day, i) => {
+      const cx = left + band * i + band / 2;
+      let acc = 0;
+      D.MEALS.forEach((m) => {
+        const rec = P.getRecipe(state.plan[day][m.id]);
+        if (!rec) return;
+        const y0 = y(acc);
+        const y1 = y(acc + rec.kcal);
+        const r = s('rect', { x: cx - bw / 2, y: y1, width: bw, height: Math.max(0, y0 - y1 - 1.5), rx: 4, class: `seg-${m.id}` });
+        r.append(s('title', {}, `${day} ${m.label.toLowerCase()}: ${rec.name}, ${rec.kcal} kcal`));
+        svg.append(r);
+        acc += rec.kcal;
+      });
+      if (acc) svg.append(s('text', { x: cx, y: y(acc) - 6, 'text-anchor': 'middle', class: 'total-label' }, acc));
+      svg.append(s('text', { x: cx, y: H - 10, 'text-anchor': 'middle', class: 'day-label' }, day.slice(0, 3)));
+      const hit = s('rect', { x: cx - band / 2, y: top, width: band, height: H - top - bottom, class: 'bar-hit' });
+      hit.addEventListener('click', () => selectDay(day));
+      svg.append(hit);
+    });
+    const legend = h(
+      'div',
+      { class: 'legend' },
+      D.MEALS.map((m) => h('span', { style: `--k: var(--c-${m.id})` }, m.label))
+    );
+    $('kcal-chart').replaceChildren(legend, svg);
   }
 
   // 7 days x 4 slots, every cell a dropdown. Same plan as the day panel above.
@@ -295,14 +439,93 @@
             sel.value = current ? current.id : '';
             return h(
               'label',
-              { class: 'm' + (current && !P.fitsPrefs(current, state.prefs) ? ' misfit' : '') },
+              { class: `wcell ${meal.id}` + (current && !P.fitsPrefs(current, state.prefs) ? ' misfit' : '') },
               h('b', null, meal.label),
-              sel
+              h(
+                'span',
+                { class: 'wrow' },
+                current
+                  ? h('button', { type: 'button', class: 'wicon', title: `Recipe for ${current.name}`, 'aria-label': `Open recipe for ${current.name}`, onclick: (e) => { e.preventDefault(); openRecipe(current.id); } }, current.icon)
+                  : h('span', { class: 'wicon', 'aria-hidden': 'true' }, '·'),
+                sel
+              )
             );
           })
         );
       })
     );
+  }
+
+  // ---------- Recipe view ----------
+
+  function openRecipe(id) {
+    const rec = P.getRecipe(id);
+    if (!rec) return;
+    const n = servings();
+    const meal = D.MEALS.find((m) => m.id === rec.meal);
+    const needs = rec.appliances.map((req) => req.split('|').map(applianceLabel).join(' or '));
+    const styles = D.STYLES.filter((s) => s.id !== 'balanced' && P.matchesStyle(rec, s.id));
+    const steps = STEPS[rec.id] || [];
+    const dlg = $('recipe-dialog');
+    $('recipe-body').replaceChildren(
+      h('button', { type: 'button', class: 'recipe-close', 'aria-label': 'Close recipe', onclick: () => closeRecipe() }, '✕'),
+      h(
+        'header',
+        { class: `recipe-head ${rec.meal}` },
+        h('div', { class: 'plate big', 'aria-hidden': 'true' }, rec.icon),
+        h(
+          'div',
+          null,
+          h('p', { class: 'meal-label' }, meal ? meal.label : ''),
+          h('h2', { id: 'recipe-title' }, rec.name),
+          h(
+            'div',
+            { class: 'chips' },
+            h('span', { class: 'chip' }, `⏱ ${rec.time} min`),
+            h('span', { class: 'chip' }, `🔥 ${rec.kcal} kcal`),
+            h('span', { class: 'chip' }, `${rec.protein}g protein`),
+            h('span', { class: 'chip' }, `${rec.carbs}g carbs`),
+            h('span', { class: 'chip' }, `${rec.fiber}g fiber`),
+            h('span', { class: 'chip cost' }, `${P.money(P.recipeCost(rec) * n)} for ${n}`)
+          )
+        )
+      ),
+      h(
+        'div',
+        { class: 'recipe-cols' },
+        h(
+          'section',
+          null,
+          h('h3', null, `Ingredients`, h('small', null, ` for ${n} ${n === 1 ? 'person' : 'people'}`)),
+          h(
+            'ul',
+            { class: 'ing-list' },
+            P.recipeIngredients(rec, n).map((l) => h('li', null, h('b', null, l.amount), ` ${l.name}`, l.staple ? h('small', null, ' (pantry)') : null))
+          ),
+          h('p', { class: 'needs' }, needs.length ? `You'll need: ${needs.join(', ')}` : 'No cooking needed'),
+          styles.length ? h('div', { class: 'chips' }, styles.map((s) => h('span', { class: 'chip fit' }, `${s.icon} ${s.label}`))) : null
+        ),
+        h(
+          'section',
+          null,
+          h('h3', null, 'Steps'),
+          h('ol', { class: 'step-list' }, steps.map((t) => h('li', null, t)))
+        )
+      ),
+      h('p', { class: 'note' }, 'Nutrition is per person. Amounts and cost scale with the number of people eating.')
+    );
+    if (typeof dlg.showModal === 'function') {
+      if (!dlg.open) dlg.showModal();
+    } else {
+      dlg.setAttribute('open', '');
+    }
+    dlg.querySelector('.recipe-close').focus();
+  }
+
+  function closeRecipe() {
+    const dlg = $('recipe-dialog');
+    if (typeof dlg.close === 'function') dlg.close();
+    else dlg.removeAttribute('open');
   }
 
   // ---------- Step 3: stores + shopping list ----------
@@ -316,10 +539,12 @@
     $('shop-body').hidden = !complete;
     $('shop-locked').hidden = complete;
     if (!complete) {
-      const left = 21 - P.countMainFilled(state.plan);
-      $('shop-locked').textContent = `Pick breakfast, lunch and dinner for every day to build your shopping list (${left} meal${
+      const filled = P.countMainFilled(state.plan);
+      const left = 21 - filled;
+      $('shop-locked-text').textContent = `Pick breakfast, lunch and dinner for every day to unlock your shopping list. ${left} meal${
         left === 1 ? '' : 's'
-      } to go). Snacks are optional.`;
+      } to go. Snacks are optional.`;
+      $('locked-bar').style.width = `${(filled / 21) * 100}%`;
       return;
     }
     $('location').value = state.location || '';
@@ -351,13 +576,14 @@
             'div',
             null,
             h('div', { class: 'store-name' }, s.name),
-            h('div', { class: 'store-meta' }, `${s.type} · ${s.distance.toFixed(1)} mi · ${tier.label} prices`),
             h(
               'div',
-              { class: 'store-total' },
-              `Whole list ≈ ${P.money(totals[i])}`,
-              totals[i] === cheapest && state.stores.length > 1 ? h('span', { class: 'badge' }, 'Cheapest') : null
+              null,
+              h('span', { class: `pill ${s.tier || 'standard'}` }, `${tier.label} prices`),
+              totals[i] === cheapest && state.stores.length > 1 ? h('span', { class: 'pill cheapest' }, 'Cheapest') : null
             ),
+            h('div', { class: 'store-total' }, P.money(totals[i]), h('small', null, ' for the whole list')),
+            h('div', { class: 'store-meta' }, `${s.type} · ${s.distance.toFixed(1)} mi away`),
             s.address ? h('div', { class: 'store-meta' }, s.address) : null,
             h('a', { href: dir, target: '_blank', rel: 'noopener', class: 'store-meta' }, 'Directions')
           )
@@ -429,7 +655,12 @@
         const head = h(
           'div',
           { class: 'group-head' },
-          h('h4', null, g.key),
+          h(
+            'h4',
+            null,
+            h('span', { class: 'gicon', 'aria-hidden': 'true' }, state.view === 'store' ? (store ? '🏪' : '🛒') : D.CATEGORY_ICONS[g.key] || '🛒'),
+            g.key
+          ),
           store
             ? h('span', { class: 'store-meta' }, `≈ ${P.money(P.storeTotal(g.items, store, state.checked))} at ${D.STORE_TIERS[store.tier || 'standard'].label.toLowerCase()} prices`)
             : null
@@ -607,6 +838,7 @@
     renderBudget();
     renderTabs();
     renderDay();
+    renderChart();
     renderWeekGrid();
     renderShop();
   }
@@ -624,6 +856,14 @@
       state.prefs.servings = Math.min(12, n);
       update();
     });
+    document.querySelectorAll('.step-btn').forEach((b) =>
+      b.addEventListener('click', () => {
+        const n = Math.min(12, Math.max(1, servings() + Number(b.dataset.step)));
+        state.prefs.servings = n;
+        $('servings').value = n;
+        update();
+      })
+    );
     $('autofill').addEventListener('click', () => {
       const before = P.countMainFilled(state.plan);
       state.plan = P.autofill(state.plan, state.prefs);
@@ -631,8 +871,23 @@
       const added = P.countMainFilled(state.plan) - before;
       toast(added || P.isWeekComplete(state.plan) ? 'Week filled in. Swap anything you like.' : 'No matching meals to add.');
     });
-    $('clear-week').addEventListener('click', () => {
-      if (!confirm('Clear every meal from this week?')) return;
+    // Two taps to clear, so a stray tap can't wipe the week.
+    let clearArmed = null;
+    const disarm = (btn) => {
+      clearTimeout(clearArmed);
+      clearArmed = null;
+      btn.textContent = 'Clear week';
+      btn.classList.remove('confirming');
+    };
+    $('clear-week').addEventListener('click', (e) => {
+      const btn = e.currentTarget;
+      if (!clearArmed) {
+        btn.textContent = 'Tap again to clear';
+        btn.classList.add('confirming');
+        clearArmed = setTimeout(() => disarm(btn), 3000);
+        return;
+      }
+      disarm(btn);
       state.plan = P.emptyPlan();
       state.checked = {};
       update();
@@ -654,6 +909,10 @@
       })
     );
     $('copy-list').addEventListener('click', copyList);
+    // Clicking the dimmed backdrop closes the recipe.
+    $('recipe-dialog').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) closeRecipe();
+    });
     $('print-list').addEventListener('click', () => window.print());
   }
 

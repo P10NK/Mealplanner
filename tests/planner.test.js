@@ -186,3 +186,46 @@ test('store tiers adjust the estimated total', () => {
   );
   assert.equal(stores[0].tier, 'premium');
 });
+
+test('dayTotals adds up a day per person', () => {
+  const plan = P.emptyPlan();
+  plan.Monday.breakfast = 'b-pb-toast';
+  plan.Monday.snack = 's-banana';
+  const t = P.dayTotals(plan, 'Monday');
+  assert.equal(t.kcal, 450 + 105);
+  assert.equal(t.protein, 16);
+  assert.equal(t.meals, 2);
+  assert.equal(P.dayTotals(plan, 'Tuesday').kcal, 0);
+});
+
+test('every recipe, style and appliance has a picture', () => {
+  for (const r of D.RECIPES) assert.ok(r.icon, r.id);
+  for (const s of D.STYLES) assert.ok(s.icon, s.id);
+  for (const a of D.APPLIANCES) assert.ok(a.icon, a.id);
+  for (const c of D.CATEGORIES) assert.ok(D.CATEGORY_ICONS[c], c);
+});
+
+test('every recipe has cooking steps', () => {
+  const STEPS = require('../js/steps.js');
+  for (const r of D.RECIPES) {
+    assert.ok(Array.isArray(STEPS[r.id]) && STEPS[r.id].length >= 1, `${r.id} has no steps`);
+  }
+  for (const id of Object.keys(STEPS)) assert.ok(P.getRecipe(id), `steps for unknown recipe ${id}`);
+});
+
+test('recipe ingredients scale to the household without rounding up', () => {
+  const lines = P.recipeIngredients(P.getRecipe('b-avocado-toast'), 1);
+  const by = Object.fromEntries(lines.map((l) => [l.key, l.amount]));
+  assert.equal(by.avocado, '½');
+  assert.equal(by.bread, '2 slices');
+  const four = Object.fromEntries(P.recipeIngredients(P.getRecipe('l-burrito-bowl'), 4).map((l) => [l.key, l.amount]));
+  assert.equal(four.chicken_breast, '1.2 lb');
+  assert.equal(four.rice, '1 cup');
+});
+
+test('single items read naturally in recipes', () => {
+  const by = Object.fromEntries(P.recipeIngredients(P.getRecipe('d-sweet-potato-chili'), 1).map((l) => [l.key, l.name]));
+  assert.equal(by.sweet_potato, 'Sweet potato');
+  assert.equal(by.onion, 'Onion');
+  assert.equal(P.recipeIngredients(P.getRecipe('b-pb-toast'), 2).find((l) => l.key === 'banana').name, 'Bananas');
+});
