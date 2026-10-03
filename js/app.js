@@ -8,11 +8,13 @@
   const STORAGE_KEY = 'mealplanner:v1';
   const OVERPASS_URLS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
   const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search';
+  const PRICE_API = String((window.MP_CONFIG || {}).priceApi || '').replace(/\/+$/, '');
+  const PRICE_MAX_AGE = 6 * 60 * 60 * 1000;
 
   const defaults = () => ({
     prefs: {
       styles: ['balanced'],
-      appliances: ['stovetop', 'oven', 'microwave'],
+      appliances: ['stovetop', 'oven', 'microwave', 'toaster'],
       budget: 100,
       servings: 1,
     },
@@ -25,6 +27,7 @@
     assignments: {},
     checked: {},
     view: 'category',
+    livePrices: {}, // Kroger location id -> { at, prices }
   });
 
   let state = load();
@@ -36,6 +39,9 @@
       if (saved && typeof saved === 'object') {
         const merged = Object.assign(base, saved);
         merged.prefs = Object.assign(defaults().prefs, saved.prefs || {});
+        // Drop styles that are no longer offered so they can't filter meals invisibly.
+        merged.prefs.styles = (merged.prefs.styles || []).filter((id) => D.STYLES.some((s) => s.id === id));
+        if (!merged.prefs.styles.length) merged.prefs.styles = ['balanced'];
         merged.plan = Object.assign(P.emptyPlan(), saved.plan || {});
         if (!D.DAYS.includes(merged.day)) merged.day = D.DAYS[0];
         return merged;
@@ -132,6 +138,7 @@
               if (e.target.checked) set.add(a.id);
               else set.delete(a.id);
               state.prefs.appliances = [...set];
+              renderKitchenSummary();
               update();
             },
           }),
@@ -141,10 +148,16 @@
       )
     );
 
+    renderKitchenSummary();
     $('budget').value = state.prefs.budget;
     $('servings').value = state.prefs.servings;
     $('stat-recipes').textContent = D.RECIPES.length;
-    $('stat-styles').textContent = D.STYLES.length;
+    $('stat-ready').textContent = D.RECIPES.filter((r) => r.ready).length;
+  }
+
+  function renderKitchenSummary() {
+    const names = D.APPLIANCES.filter((a) => state.prefs.appliances.includes(a.id)).map((a) => a.label);
+    $('kitchen-summary').textContent = names.length ? names.join(', ') : 'No-cook only';
   }
 
   function toggleStyle(id, on) {
@@ -185,20 +198,6 @@
     $('meal-progress').textContent = filled === 21 ? 'Week complete' : `${21 - filled} to go`;
     setRing($('meal-ring'), filled / 21);
 
-    const days = D.DAYS.map((d) => P.dayTotals(state.plan, d)).filter((t) => t.meals);
-    const avg = (k) => (days.length ? Math.round(days.reduce((s, t) => s + t[k], 0) / days.length) : 0);
-    // Averages cover only the days with meals picked, and the title says how many.
-    $('avg-title').textContent =
-      days.length && days.length < 7
-        ? `Daily average per person (${days.length} planned day${days.length === 1 ? '' : 's'})`
-        : 'Daily average per person';
-    const stat = (label, value, unit) => h('div', null, h('dt', null, label), h('dd', null, value, unit ? h('small', null, ` ${unit}`) : null));
-    $('avg-grid').replaceChildren(
-      stat('Calories', days.length ? avg('kcal') : '–', 'kcal'),
-      stat('Protein', days.length ? avg('protein') : '–', 'g'),
-      stat('Carbs', days.length ? avg('carbs') : '–', 'g'),
-      stat('Fiber', days.length ? avg('fiber') : '–', 'g')
-    );
   }
 
   function renderTabs() {
@@ -231,25 +230,11 @@
     save();
     renderTabs();
     renderDay();
-    renderChart();
     renderWeekGrid();
   }
 
   function recipeLabel(rec) {
     return `${rec.name} · ${P.money(P.recipeCost(rec) * servings())}`;
-  }
-
-  // Bars are scaled against a generous per-meal reference so they stay comparable.
-  const MACRO_REF = { protein: 50, carbs: 90, fiber: 20 };
-
-  function macroBar(key, label, value) {
-    return h(
-      'div',
-      { class: `macro ${key}` },
-      h('span', null, label),
-      h('span', { class: 'track' }, h('span', { class: 'fill', style: `display:block;width:${Math.min(100, (value / MACRO_REF[key]) * 100)}%` })),
-      h('b', null, `${value}g`)
-    );
   }
 
   function renderDay() {
@@ -279,7 +264,8 @@
             : `No ${meal.label.toLowerCase()} matches. Try fewer styles or more appliances.`
         )
       );
-      options.forEach((rec) => select.append(h('option', { value: rec.id }, recipeLabel(rec))));
+      const rush = P.isRushSlot(day, meal.id);
+      appendOptions(select, options, recipeLabel, rush);
       if (current && !options.includes(current)) {
         select.append(
           h('optgroup', { label: "Doesn't fit your current plan" }, h('option', { value: current.id }, recipeLabel(current)))
@@ -299,22 +285,16 @@
             { class: 'chips' },
             h('span', { class: 'chip cost' }, `${P.money(P.recipeCost(current) * servings())}${servings() > 1 ? ` for ${servings()}` : ''}`),
             current.ready ? h('span', { class: 'chip fit' }, '📦 Store-bought') : null,
+            rush && P.isQuickGrab(current) ? h('span', { class: 'chip fit' }, '⚡ Quick grab') : null,
             h('span', { class: 'chip' }, `⏱ ${current.time} min`),
-            h('span', { class: 'chip' }, `🔥 ${current.kcal} kcal`),
+            rush && !P.isQuickGrab(current) ? h('span', { class: 'chip warn' }, 'Slow for a weekday morning') : null,
             fits ? null : h('span', { class: 'chip warn' }, "Doesn't match your style or appliances")
-          ),
-          h(
-            'div',
-            { class: 'macros' },
-            macroBar('protein', 'Protein', current.protein),
-            macroBar('carbs', 'Carbs', current.carbs),
-            macroBar('fiber', 'Fiber', current.fiber)
           ),
           h(
             'div',
             { class: 'card-foot' },
             h('span', { class: 'needs' }, needs.length ? `Needs: ${needs.join(', ')}` : 'No cooking needed'),
-            h('button', { type: 'button', class: 'btn small', onclick: () => openRecipe(current.id) }, '📖 View recipe')
+            h('button', { type: 'button', class: 'btn small', onclick: () => openRecipe(current.id) }, '📖 How to make it')
           ),
         ];
       }
@@ -328,7 +308,7 @@
         h(
           'div',
           { class: 'meal-main' },
-          h('label', { class: 'meal-label', for: `slot-${meal.id}` }, meal.label),
+          h('label', { class: 'meal-label', for: `slot-${meal.id}` }, meal.label, rush ? h('span', { class: 'rush-tag' }, ' · weekday, quick grabs first') : null),
           select,
           details
         )
@@ -343,118 +323,68 @@
         h(
           'span',
           { class: 'day-sum' },
-          t.meals
-            ? `${t.kcal} kcal · ${t.protein}g protein · ${t.fiber}g fiber · ${P.money(t.cost * servings())}`
-            : 'Nothing planned yet'
+          t.meals ? `${P.money(t.cost * servings())} for the day` : 'Nothing planned yet'
         )
       ),
       h('div', { class: 'meal-cards' }, cards)
     );
   }
 
-  // Stacked calories per day, one segment per meal.
-  function renderChart() {
-    const SVGNS = 'http://www.w3.org/2000/svg';
-    const s = (tag, attrs, text) => {
-      const el = document.createElementNS(SVGNS, tag);
-      Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
-      if (text != null) el.textContent = text;
-      return el;
+  // Grab-and-go items first, then things you cook, so the long list is easy to scan.
+  // On weekday mornings, quick grabs come first instead.
+  function appendOptions(select, options, label, rush) {
+    const add = (title, list) => {
+      if (!list.length) return;
+      select.append(h('optgroup', { label: title }, list.map((rec) => h('option', { value: rec.id }, label(rec)))));
     };
-    const W = 700;
-    const H = 230;
-    const left = 40;
-    const right = 10;
-    const top = 22;
-    const bottom = 30;
-    const totals = D.DAYS.map((d) => P.dayTotals(state.plan, d).kcal);
-    const maxK = Math.max(2500, ...totals);
-    const step = maxK > 3000 ? 1000 : 500;
-    const yMax = Math.ceil(maxK / step) * step;
-    const y = (v) => top + (H - top - bottom) * (1 - v / yMax);
-    const band = (W - left - right) / 7;
-    const bw = Math.min(56, band * 0.6);
-    const svg = s('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Calories per day, stacked by meal' });
-    for (let v = 0; v <= yMax; v += step) {
-      svg.append(s('line', { x1: left, x2: W - right, y1: y(v), y2: y(v), class: 'grid-line' }));
-      svg.append(s('text', { x: left - 6, y: y(v) + 4, 'text-anchor': 'end', class: 'axis-label' }, v));
+    if (rush) {
+      add(`Quick grab (${P.QUICK_GRAB_MINUTES} min or less)`, options.filter(P.isQuickGrab));
+      add('Takes longer', options.filter((r) => !P.isQuickGrab(r)));
+      return;
     }
-    D.DAYS.forEach((day, i) => {
-      const cx = left + band * i + band / 2;
-      let acc = 0;
-      D.MEALS.forEach((m) => {
-        const rec = P.getRecipe(state.plan[day][m.id]);
-        if (!rec) return;
-        const y0 = y(acc);
-        const y1 = y(acc + rec.kcal);
-        const r = s('rect', { x: cx - bw / 2, y: y1, width: bw, height: Math.max(0, y0 - y1 - 1.5), rx: 4, class: `seg-${m.id}` });
-        r.append(s('title', {}, `${day} ${m.label.toLowerCase()}: ${rec.name}, ${rec.kcal} kcal`));
-        svg.append(r);
-        acc += rec.kcal;
-      });
-      if (acc) svg.append(s('text', { x: cx, y: y(acc) - 6, 'text-anchor': 'middle', class: 'total-label' }, acc));
-      svg.append(s('text', { x: cx, y: H - 10, 'text-anchor': 'middle', class: 'day-label' }, day.slice(0, 3)));
-      const hit = s('rect', { x: cx - band / 2, y: top, width: band, height: H - top - bottom, class: 'bar-hit' });
-      hit.addEventListener('click', () => selectDay(day));
-      svg.append(hit);
-    });
-    const legend = h(
-      'div',
-      { class: 'legend' },
-      D.MEALS.map((m) => h('span', { style: `--k: var(--c-${m.id})` }, m.label))
-    );
-    $('kcal-chart').replaceChildren(legend, svg);
+    const ready = options.filter((r) => r.ready);
+    const cook = options.filter((r) => !r.ready);
+    add('Grab & go', ready);
+    add('Cook it yourself', cook);
   }
 
-  // 7 days x 4 slots, every cell a dropdown. Same plan as the day panel above.
+  // Read-only overview of the week. Tapping a meal opens that day above, focused on that slot.
   function renderWeekGrid() {
-    const optionsByMeal = {};
-    D.MEALS.forEach((m) => {
-      optionsByMeal[m.id] = P.recipeOptions(m.id, state.prefs);
-    });
     $('week-grid').replaceChildren(
-      ...D.DAYS.map((day) => {
-        const mainDone = P.isDayMainComplete(state.plan, day);
-        return h(
+      ...D.DAYS.map((day) =>
+        h(
           'div',
           { class: 'week-day' + (day === state.day ? ' active' : '') },
-          h('button', { type: 'button', class: 'week-day-name', onclick: () => selectDay(day) }, day),
+          h('button', { type: 'button', class: 'week-day-name', onclick: () => jumpTo(day) }, day),
           D.MEALS.map((meal) => {
             const current = P.getRecipe(state.plan[day][meal.id]);
-            const options = optionsByMeal[meal.id];
-            const locked = meal.id === 'snack' && !mainDone;
-            const sel = h('select', {
-              disabled: locked,
-              title: current ? current.name : '',
-              'aria-label': `${day} ${meal.label.toLowerCase()}`,
-              onchange: (e) => {
-                state.plan[day][meal.id] = e.target.value || null;
-                update();
-              },
-            });
-            sel.append(h('option', { value: '' }, locked ? 'After 3 meals' : meal.id === 'snack' ? 'Optional' : '—'));
-            options.forEach((rec) => sel.append(h('option', { value: rec.id }, rec.name)));
-            if (current && !options.includes(current)) {
-              sel.append(h('optgroup', { label: "Doesn't fit your plan" }, h('option', { value: current.id }, current.name)));
-            }
-            sel.value = current ? current.id : '';
             return h(
-              'label',
-              { class: `wcell ${meal.id}` + (current && !P.fitsPrefs(current, state.prefs) ? ' misfit' : '') },
+              'button',
+              {
+                type: 'button',
+                class: `wcell ${meal.id}` + (current ? '' : ' empty'),
+                'aria-label': `${day} ${meal.label.toLowerCase()}: ${current ? current.name : 'not picked'}. Change it`,
+                onclick: () => jumpTo(day, meal.id),
+              },
               h('b', null, meal.label),
               h(
                 'span',
                 { class: 'wrow' },
-                current
-                  ? h('button', { type: 'button', class: 'wicon', title: `Recipe for ${current.name}`, 'aria-label': `Open recipe for ${current.name}`, onclick: (e) => { e.preventDefault(); openRecipe(current.id); } }, current.icon)
-                  : h('span', { class: 'wicon', 'aria-hidden': 'true' }, '·'),
-                sel
+                h('span', { class: 'wicon', 'aria-hidden': 'true' }, current ? current.icon : '+'),
+                h('span', { class: 'wname' }, current ? current.name : meal.id === 'snack' ? 'Optional' : 'Pick one')
               )
             );
           })
-        );
-      })
+        )
+      )
     );
+  }
+
+  function jumpTo(day, mealId) {
+    selectDay(day);
+    $('day-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const sel = mealId && $(`slot-${mealId}`);
+    if (sel && !sel.disabled) sel.focus({ preventScroll: true });
   }
 
   // ---------- Recipe view ----------
@@ -484,10 +414,6 @@
             { class: 'chips' },
             rec.ready ? h('span', { class: 'chip fit' }, '📦 Store-bought') : null,
             h('span', { class: 'chip' }, `⏱ ${rec.time} min`),
-            h('span', { class: 'chip' }, `🔥 ${rec.kcal} kcal`),
-            h('span', { class: 'chip' }, `${rec.protein}g protein`),
-            h('span', { class: 'chip' }, `${rec.carbs}g carbs`),
-            h('span', { class: 'chip' }, `${rec.fiber}g fiber`),
             h('span', { class: 'chip cost' }, `${P.money(P.recipeCost(rec) * n)} for ${n}`)
           )
         )
@@ -505,7 +431,8 @@
             P.recipeIngredients(rec, n).map((l) => h('li', null, h('b', null, l.amount), ` ${l.name}`, l.staple ? h('small', null, ' (pantry)') : null))
           ),
           h('p', { class: 'needs' }, needs.length ? `You'll need: ${needs.join(', ')}` : 'No cooking needed'),
-          styles.length ? h('div', { class: 'chips' }, styles.map((s) => h('span', { class: 'chip fit' }, `${s.icon} ${s.label}`))) : null
+          styles.length ? h('div', { class: 'chips' }, styles.map((s) => h('span', { class: 'chip fit' }, `${s.icon} ${s.label}`))) : null,
+          h('p', { class: 'needs' }, `About ${rec.kcal} calories and ${rec.protein}g protein per person.`)
         ),
         h(
           'section',
@@ -514,7 +441,7 @@
           h('ol', { class: 'step-list' }, steps.map((t) => h('li', null, t)))
         )
       ),
-      h('p', { class: 'note' }, 'Nutrition is per person. Amounts and cost scale with the number of people eating.')
+      h('p', { class: 'note' }, rec.ready ? 'Directions are typical for this product. Follow the box if it says something different.' : 'Amounts and cost scale with the number of people eating.')
     );
     if (typeof dlg.showModal === 'function') {
       if (!dlg.open) dlg.showModal();
@@ -532,8 +459,53 @@
 
   // ---------- Step 3: stores + shopping list ----------
 
+  // Stores carry their shelf prices once loaded, so totals can use them.
+  function withPrices(s) {
+    const lp = s.live && state.livePrices[s.krogerId];
+    return lp ? Object.assign({}, s, { prices: lp.prices }) : s;
+  }
+
   function selectedStores() {
-    return state.stores.filter((s) => state.selectedStores.includes(s.id));
+    return state.stores.filter((s) => state.selectedStores.includes(s.id)).map(withPrices);
+  }
+
+  // The first selected store with shelf prices sets meal prices everywhere.
+  function priceStore() {
+    return selectedStores().find((s) => s.prices) || null;
+  }
+
+  function applyLivePrices() {
+    const ps = priceStore();
+    P.setLivePrices(ps ? ps.prices : null);
+  }
+
+  const loadingPrices = new Set();
+
+  async function loadLivePrices(store, force) {
+    if (!PRICE_API || !store || !store.live) return;
+    const have = state.livePrices[store.krogerId];
+    if (!force && have && Date.now() - have.at < PRICE_MAX_AGE) return;
+    if (loadingPrices.has(store.krogerId)) return;
+    loadingPrices.add(store.krogerId);
+    renderStores();
+    try {
+      const items = Object.keys(D.INGREDIENTS).map((key) => ({ key, term: P.searchTerm(key) }));
+      const res = await fetch(`${PRICE_API}/prices`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ locationId: store.krogerId, items }),
+      });
+      if (!res.ok) throw new Error(`Price server error (${res.status})`);
+      const json = await res.json();
+      state.livePrices[store.krogerId] = { at: Date.now(), prices: json.prices || {} };
+      loadingPrices.delete(store.krogerId);
+      update();
+      toast(`Prices now come from ${store.name}`);
+    } catch (e) {
+      loadingPrices.delete(store.krogerId);
+      renderStores();
+      toast(`Couldn't get prices from ${store.name}. Showing estimates.`);
+    }
   }
 
   function renderShop() {
@@ -558,11 +530,15 @@
   function renderStores() {
     const list = $('store-list');
     const items = P.buildShoppingList(state.plan, servings());
-    const totals = state.stores.map((s) => P.storeTotal(items, s));
+    const stores = state.stores.map(withPrices);
+    const breakdowns = stores.map((s) => P.storeBreakdown(items, s));
+    const totals = breakdowns.map((b) => b.total);
     const cheapest = totals.length ? Math.min(...totals) : 0;
     list.replaceChildren(
-      ...state.stores.map((s, i) => {
+      ...stores.map((s, i) => {
         const on = state.selectedStores.includes(s.id);
+        const b = breakdowns[i];
+        const loading = loadingPrices.has(s.krogerId);
         const tier = D.STORE_TIERS[s.tier || 'standard'];
         const dir = `https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lon}`;
         return h(
@@ -581,10 +557,17 @@
             h(
               'div',
               null,
-              h('span', { class: `pill ${s.tier || 'standard'}` }, `${tier.label} prices`),
+              s.prices
+                ? h('span', { class: 'pill live' }, 'Shelf prices')
+                : loading
+                  ? h('span', { class: 'pill live' }, 'Getting prices…')
+                  : h('span', { class: `pill ${s.tier || 'standard'}` }, s.live && PRICE_API ? 'Select for shelf prices' : `${tier.label} prices (est.)`),
               totals[i] === cheapest && state.stores.length > 1 ? h('span', { class: 'pill cheapest' }, 'Cheapest') : null
             ),
-            h('div', { class: 'store-total' }, P.money(totals[i]), h('small', null, ' for the whole list')),
+            h('div', { class: 'store-total' }, P.money(totals[i]), h('small', null, s.prices ? ' for the whole list' : ' estimated')),
+            s.prices && b.priced < b.count
+              ? h('div', { class: 'store-meta' }, `${b.priced} of ${b.count} items at shelf price, the rest estimated`)
+              : null,
             h('div', { class: 'store-meta' }, `${s.type} · ${s.distance.toFixed(1)} mi away`),
             s.address ? h('div', { class: 'store-meta' }, s.address) : null,
             h('a', { href: dir, target: '_blank', rel: 'noopener', class: 'store-meta' }, 'Directions')
@@ -604,9 +587,8 @@
       });
     }
     state.selectedStores = state.stores.filter((s) => set.has(s.id)).map((s) => s.id);
-    save();
-    renderStores();
-    renderList();
+    update();
+    if (on) loadLivePrices(state.stores.find((s) => s.id === id));
   }
 
   function storeSelect(value, label, onchange) {
@@ -624,14 +606,15 @@
     const total = P.listTotal(items);
     const remaining = P.listTotal(items, state.checked);
     const budget = Number(state.prefs.budget) || 0;
+    const ps = priceStore();
     $('list-total').textContent =
-      `Estimated total ${P.money(total)} at standard prices` +
+      (ps ? `Total ${P.money(total)} at ${ps.name}` : `Estimated total ${P.money(total)} at standard prices`) +
       (budget ? ` (budget ${P.money(budget)})` : '') +
       (remaining !== total ? ` · ${P.money(remaining)} left to buy` : '');
     const over = budget > 0 && total > budget;
     $('over-budget').hidden = !over;
     if (over) {
-      $('over-budget').textContent = `This plan is about ${P.money(total - budget)} over your weekly budget. Swap a few meals for cheaper ones, try the Money saver style, or shop at a discount store.`;
+      $('over-budget').textContent = `This plan is about ${P.money(total - budget)} over your weekly budget. Swap a few meals for cheaper ones, try Cheap eats, or shop at a discount store.`;
     }
 
     document.querySelectorAll('.seg-btn').forEach((b) => b.classList.toggle('on', b.dataset.view === state.view));
@@ -699,12 +682,29 @@
                   renderList();
                 },
               }),
-              h(
-                'div',
-                { class: 'item-name' },
-                it.name,
-                h('small', null, P.formatQty(it.buyQty, it.unit) + (it.staple ? ' · pantry staple, check if you have it' : ''))
-              ),
+              it.live
+                ? h(
+                    'div',
+                    { class: 'item-name' },
+                    it.live.description,
+                    h(
+                      'small',
+                      null,
+                      `${it.live.packs} × ${it.live.size || 'pack'} · ${P.money(it.live.price)} each` +
+                        (it.live.onSale ? ' · on sale' : '') +
+                        (it.staple ? ' · pantry staple, check if you have it' : '')
+                    )
+                  )
+                : h(
+                    'div',
+                    { class: 'item-name' },
+                    it.name,
+                    h(
+                      'small',
+                      null,
+                      P.formatQty(it.buyQty, it.unit) + (ps ? ' · estimated' : '') + (it.staple ? ' · pantry staple, check if you have it' : '')
+                    )
+                  ),
               h('div', { class: 'item-cost' }, P.money(it.cost)),
               stores.length &&
               storeSelect(state.assignments[it.key], `Store for ${it.name}`, (e) => {
@@ -755,6 +755,14 @@
     throw lastErr || new Error('Store search failed');
   }
 
+  async function fetchKrogerStores(lat, lon, radius) {
+    if (!PRICE_API) return [];
+    const res = await fetch(`${PRICE_API}/locations?lat=${lat}&lon=${lon}&radius=${radius}`);
+    if (!res.ok) throw new Error('Kroger store search failed');
+    const json = await res.json();
+    return P.shapeKrogerStores(json.stores, lat, lon).filter((s) => s.distance <= radius * 1.02);
+  }
+
   async function searchStores(coords) {
     const radius = Number($('radius').value) || 5;
     state.radius = radius;
@@ -770,9 +778,24 @@
         state.location = q;
         point = await geocode(q);
       }
-      const stores = (await fetchStores(point.lat, point.lon, radius)).slice(0, 60);
+      const [mapRes, krogerRes] = await Promise.allSettled([
+        fetchStores(point.lat, point.lon, radius),
+        fetchKrogerStores(point.lat, point.lon, radius),
+      ]);
+      if (mapRes.status === 'rejected' && !(krogerRes.value || []).length) throw mapRes.reason;
+      const kroger = krogerRes.value || [];
+      // Kroger's own listing replaces the map's copy of the same store.
+      const letters = (t) => String(t || '').toLowerCase().replace(/[^a-z]/g, '');
+      const sameStore = (s, k) =>
+        P.haversineMiles(s.lat, s.lon, k.lat, k.lon) < 0.15 &&
+        [k.brand, k.name.split(' ')[0]].some((c) => letters(c).length > 2 && letters(s.name).includes(letters(c)));
+      const mapStores = (mapRes.value || []).filter((s) => !kroger.some((k) => sameStore(s, k)));
+      const stores = mapStores.concat(kroger).sort((a, b) => a.distance - b.distance).slice(0, 60);
       state.stores = stores;
-      state.selectedStores = stores.slice(0, 3).map((s) => s.id);
+      const pick = stores.slice(0, 3);
+      const nearestLive = stores.find((s) => s.live);
+      if (nearestLive && !pick.includes(nearestLive)) pick[Math.min(2, pick.length - 1)] = nearestLive;
+      state.selectedStores = pick.map((s) => s.id);
       state.assignments = {};
       save();
       setStatus(
@@ -781,8 +804,8 @@
           : `No grocery stores found within ${radius} mi. Try a bigger radius.`,
         !stores.length
       );
-      renderStores();
-      renderList();
+      update();
+      loadLivePrices(nearestLive);
     } catch (e) {
       const msg =
         e instanceof TypeError || /Store search failed/.test(e.message)
@@ -836,11 +859,11 @@
   // ---------- wiring ----------
 
   function update() {
+    applyLivePrices();
     save();
     renderBudget();
     renderTabs();
     renderDay();
-    renderChart();
     renderWeekGrid();
     renderShop();
   }

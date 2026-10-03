@@ -245,3 +245,58 @@ test('ready to eat style keeps only store-bought items', () => {
   plan.Monday.breakfast = 'rb-belvita';
   assert.equal(P.buildShoppingList(plan, 1)[0].cat, 'Ready-to-Eat');
 });
+
+test('weekday breakfasts are quick grabs when auto-filled', () => {
+  const D2 = D;
+  let seed = 7;
+  const rng = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  const prefs = { styles: ['balanced'], appliances: D2.APPLIANCES.map((a) => a.id), budget: 0, servings: 1 };
+  const plan = P.autofill(P.emptyPlan(), prefs, rng);
+  for (const day of P.WEEKDAYS) assert.ok(P.isQuickGrab(P.getRecipe(plan[day].breakfast)), `${day} ${plan[day].breakfast}`);
+  assert.ok(P.isRushSlot('Monday', 'breakfast'));
+  assert.ok(!P.isRushSlot('Saturday', 'breakfast'));
+  assert.ok(!P.isRushSlot('Monday', 'dinner'));
+});
+
+test('every grab-and-go item names a brand-led product and has plenty of options', () => {
+  for (const meal of D.MEALS) {
+    const n = D.RECIPES.filter((r) => r.ready && r.meal === meal.id).length;
+    assert.ok(n >= 12, `${meal.id} has only ${n} grab-and-go options`);
+  }
+});
+
+test('package sizes convert to recipe units', () => {
+  assert.deepEqual(P.parseSize('1/2 gal'), { n: 0.5, u: 'gal' });
+  assert.deepEqual(P.parseSize('16 fl oz'), { n: 16, u: 'floz' });
+  assert.deepEqual(P.parseSize('6 ct / 1.5 oz'), { n: 6, u: 'ct' });
+  assert.equal(P.parseSize('family size'), null);
+  assert.equal(P.unitsPerPack('milk', { size: '1 gal' }), 16);
+  assert.equal(P.unitsPerPack('hot_pocket', { size: '2 ct' }), 2);
+  assert.equal(P.unitsPerPack('lunchables', { size: '3.2 oz' }), 1);
+  assert.equal(P.unitsPerPack('chicken_breast', { size: '2 lb' }), 2);
+  assert.equal(P.unitsPerPack('banana', { size: '1 lb', soldBy: 'WEIGHT' }), null);
+  assert.equal(P.searchTerm('rotisserie_chicken'), 'Rotisserie chicken');
+  assert.equal(P.searchTerm('frozen_meal'), 'Lean Cuisine frozen meal');
+});
+
+test('live store prices replace estimates in meals, list and store totals', () => {
+  const plan = P.emptyPlan();
+  plan.Monday.lunch = 'rl-hot-pocket';
+  plan.Tuesday.lunch = 'rl-hot-pocket';
+  plan.Wednesday.lunch = 'rl-hot-pocket';
+  const prices = { hot_pocket: { description: 'Hot Pockets Pepperoni', size: '2 ct', price: 3.0 } };
+  const est = P.recipeCost(P.getRecipe('rl-hot-pocket'));
+  try {
+    P.setLivePrices(prices);
+    assert.equal(P.recipeCost(P.getRecipe('rl-hot-pocket')), 1.5);
+    const [item] = P.buildShoppingList(plan, 1);
+    assert.equal(item.live.packs, 2); // 3 Hot Pockets need two 2-packs
+    assert.equal(item.cost, 6);
+    const b = P.storeBreakdown([item], { prices });
+    assert.deepEqual(b, { total: 6, priced: 1, count: 1 });
+    assert.match(P.shoppingListText([item], {}), /Hot Pockets Pepperoni \(2 ct\) x2: \$6\.00/);
+  } finally {
+    P.setLivePrices(null);
+  }
+  assert.equal(P.recipeCost(P.getRecipe('rl-hot-pocket')), est);
+});

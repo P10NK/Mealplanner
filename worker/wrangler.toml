@@ -1,0 +1,8 @@
+# Cloudflare Worker that serves Kroger prices to the meal planner. See README, "Live Kroger prices".
+name = "mealplanner-prices"
+main = "index.mjs"
+compatibility_date = "2026-09-01"
+
+[vars]
+# Set to your site's address (e.g. https://p10nk.github.io) to only allow requests from it.
+ALLOWED_ORIGIN = "*"

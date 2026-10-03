@@ -18,12 +18,107 @@
 
   const MAIN_MEALS = ['breakfast', 'lunch', 'dinner'];
 
+  // Weekday mornings are rushed, so those breakfasts lean on things you can grab in 5 minutes or less.
+  const QUICK_GRAB_MINUTES = 5;
+  const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+
+  function isQuickGrab(recipe) {
+    return !!recipe && recipe.time <= QUICK_GRAB_MINUTES;
+  }
+
+  function isRushSlot(day, meal) {
+    return meal === 'breakfast' && WEEKDAYS.includes(day);
+  }
+
   function getRecipe(id) {
     return id ? RECIPE_BY_ID[id] || null : null;
   }
 
+  // ---------- Live store prices (Kroger) ----------
+  // With a live-priced store selected, costs use its shelf prices. Anything the
+  // store doesn't price, or whose package size we can't convert, stays estimated.
+  let live = null; // { [ingredientKey]: product from the price server }
+
+  function setLivePrices(prices) {
+    live = prices || null;
+  }
+
+  // Search term for an ingredient: its name without notes in brackets or after a comma.
+  function searchTerm(key) {
+    const i = D.INGREDIENTS[key];
+    if (!i) return '';
+    return (i.term || i.name).replace(/\(.*?\)/g, '').split(',')[0].replace(/\s+/g, ' ').trim();
+  }
+
+  // "12 ct", "1 gal", "16 oz", "1/2 gal", "6 ct / 1.5 oz" -> { n, u } from the first part.
+  function parseSize(size) {
+    const m = String(size || '')
+      .toLowerCase()
+      .split('/ ')[0]
+      .match(/(\d+(?:\.\d+)?(?:\/\d+)?)\s*(fl\.? ?oz|oz|lbs?|ct|count|each|ea|pk|gal|qt|pt|ml|l|g|kg)\b/);
+    if (!m) return null;
+    const [a, b] = m[1].split('/');
+    const n = b ? Number(a) / Number(b) : Number(a);
+    let u = m[2].replace(/\.|\s/g, '');
+    if (u === 'lbs') u = 'lb';
+    if (u === 'count' || u === 'each' || u === 'ea' || u === 'pk') u = 'ct';
+    return n > 0 ? { n, u } : null;
+  }
+
+  // Rough ounces per cup for things sold by weight but used by the cup.
+  const OZ_PER_CUP = { cheddar: 4, mozzarella: 4, oats: 3, rice: 6.5, quinoa: 6, cereal: 1.3, frozen_fries: 3, frozen_veg: 5, frozen_berries: 5, spinach: 1, granola: 4 };
+
+  // How many of our recipe units one package holds, or null when we can't tell.
+  function unitsPerPack(key, product) {
+    const i = D.INGREDIENTS[key];
+    const sz = product && parseSize(product.size);
+    if (!i || !product) return null;
+    if (product.soldBy && /weight/i.test(product.soldBy) && i.unit !== 'lb' && i.unit !== 'oz') return null;
+    if (!sz) return i.unit === 'each' || i.unit === 'can' ? 1 : null;
+    const { n, u } = sz;
+    const floz = u === 'floz' ? n : u === 'gal' ? n * 128 : u === 'qt' ? n * 32 : u === 'pt' ? n * 16 : u === 'l' ? n * 33.8 : u === 'ml' ? n / 29.57 : null;
+    const oz = u === 'oz' ? n : u === 'lb' ? n * 16 : u === 'g' ? n / 28.35 : u === 'kg' ? n * 35.27 : null;
+    switch (i.unit) {
+      case 'each':
+      case 'can':
+        return u === 'ct' ? n : 1; // a single packaged item (e.g. "3.2 oz" Lunchables) is one
+      case 'cup':
+        if (floz) return floz / 8;
+        if (oz) return oz / (OZ_PER_CUP[key] || 8);
+        return null;
+      case 'tbsp':
+        return floz ? floz * 2 : oz ? oz * 2 : null;
+      case 'tsp':
+        return floz ? floz * 6 : oz ? oz * 6 : null;
+      case 'oz':
+        return oz || floz || null;
+      case 'lb':
+        return oz ? oz / 16 : null;
+      case 'slice':
+        return u === 'ct' ? n : oz || null;
+      case 'scoop':
+        return oz ? oz / 1.06 : null;
+      default:
+        return null;
+    }
+  }
+
+  // Exact spend for buying `qty` units of an ingredient from a live product, or null.
+  function liveCost(key, qty, product) {
+    const per = unitsPerPack(key, product);
+    if (!per || !(product.price > 0)) return null;
+    const packs = Math.max(1, Math.ceil(qty / per - 1e-9));
+    return { packs, cost: packs * product.price, unitPrice: product.price / per };
+  }
+
+  function unitPrice(key) {
+    const product = live && live[key];
+    const lc = product && liveCost(key, 1, product);
+    return lc ? lc.unitPrice : D.INGREDIENTS[key].price;
+  }
+
   function recipeCost(recipe) {
-    return recipe.ingredients.reduce((sum, [key, qty]) => sum + D.INGREDIENTS[key].price * qty, 0);
+    return recipe.ingredients.reduce((sum, [key, qty]) => sum + unitPrice(key) * qty, 0);
   }
 
   function recipeFlags(recipe) {
@@ -174,6 +269,11 @@
       const i = D.INGREDIENTS[key];
       const qty = totals[key];
       const buyQty = D.WHOLE_UNITS.includes(i.unit) ? Math.ceil(qty - 1e-9) : qty;
+      const product = live && live[key];
+      const lc = product && liveCost(key, qty, product);
+      if (lc) {
+        return { key, name: i.name, cat: i.cat, unit: i.unit, qty, buyQty, cost: lc.cost, staple: i.staple, live: { ...product, packs: lc.packs } };
+      }
       return {
         key,
         name: i.name,
@@ -236,7 +336,8 @@
     let spent = plannedRecipes(next).reduce((s, rec) => s + recipeCost(rec) * servings, 0);
 
     slots.forEach(([day, meal], i) => {
-      const options = recipeOptions(meal, prefs);
+      let options = recipeOptions(meal, prefs);
+      if (isRushSlot(day, meal) && options.some(isQuickGrab)) options = options.filter(isQuickGrab);
       if (!options.length) return;
       const remainingSlots = slots.length - i;
       const target = budget > 0 ? ((budget * 0.92 - spent) / remainingSlots) : Infinity;
@@ -376,9 +477,47 @@
   }
 
   // Estimated cost of the list at a store, using its price tier.
+  // A live store prices each item from its own shelf (falling back to the estimate);
+  // other stores scale the estimate by their price tier.
   function storeTotal(items, store, excluded) {
+    return storeBreakdown(items, store, excluded).total;
+  }
+
+  function storeBreakdown(items, store, excluded) {
+    const skip = excluded || {};
+    const kept = items.filter((it) => !skip[it.key]);
+    if (store && store.prices) {
+      let total = 0;
+      let priced = 0;
+      kept.forEach((it) => {
+        const lc = store.prices[it.key] && liveCost(it.key, it.qty, store.prices[it.key]);
+        if (lc) priced++;
+        total += lc ? lc.cost : D.INGREDIENTS[it.key].price * it.buyQty;
+      });
+      return { total, priced, count: kept.length };
+    }
     const tier = D.STORE_TIERS[(store && store.tier) || 'standard'] || D.STORE_TIERS.standard;
-    return listTotal(items, excluded) * tier.factor;
+    const base = kept.reduce((sum, it) => sum + (it.live ? D.INGREDIENTS[it.key].price * it.buyQty : it.cost), 0);
+    return { total: base * tier.factor, priced: 0, count: kept.length };
+  }
+
+  // Kroger-family stores from the price server, in the same shape as map stores.
+  function shapeKrogerStores(list, lat, lon) {
+    return (list || [])
+      .filter((s) => s && s.id && s.lat != null && s.lon != null)
+      .map((s) => ({
+        id: `kroger/${s.id}`,
+        krogerId: s.id,
+        name: s.name,
+        brand: s.chain || '',
+        type: 'Kroger family',
+        tier: 'standard',
+        live: true,
+        address: s.address || '',
+        lat: s.lat,
+        lon: s.lon,
+        distance: haversineMiles(lat, lon, s.lat, s.lon),
+      }));
   }
 
   function parseOverpassStores(json, lat, lon, radiusMiles) {
@@ -429,16 +568,31 @@
     groups.forEach((g) => {
       lines.push(g.key.toUpperCase());
       g.items.forEach((it) => {
-        lines.push(`- ${it.name}: ${formatQty(it.buyQty, it.unit)} (~${money(it.cost)})`);
+        lines.push(
+          it.live
+            ? `- ${it.live.description} (${it.live.size}) x${it.live.packs}: ${money(it.cost)}`
+            : `- ${it.name}: ${formatQty(it.buyQty, it.unit)} (~${money(it.cost)})`
+        );
       });
       lines.push('');
     });
-    lines.push(`Estimated total: ${money(listTotal(kept))}`);
+    lines.push(`${kept.some((it) => it.live) ? 'Total' : 'Estimated total'}: ${money(listTotal(kept))}`);
     return lines.join('\n');
   }
 
   const api = {
     MAIN_MEALS,
+    setLivePrices,
+    searchTerm,
+    parseSize,
+    unitsPerPack,
+    liveCost,
+    storeBreakdown,
+    shapeKrogerStores,
+    QUICK_GRAB_MINUTES,
+    WEEKDAYS,
+    isQuickGrab,
+    isRushSlot,
     getRecipe,
     recipeCost,
     recipeFlags,
