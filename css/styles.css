@@ -860,6 +860,175 @@ button:focus-visible {
   color: var(--muted);
 }
 
+button.plate {
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+  transition: transform 0.15s;
+}
+
+button.plate:hover {
+  transform: scale(1.06);
+}
+
+.card-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ---------- Recipe dialog ---------- */
+dialog.recipe {
+  width: min(820px, calc(100% - 24px));
+  max-height: calc(100% - 32px);
+  padding: 0;
+  border: 0;
+  border-radius: 20px;
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+dialog.recipe::backdrop {
+  background: rgba(10, 25, 16, 0.55);
+}
+
+.recipe-inner {
+  position: relative;
+  padding: 0 0 18px;
+}
+
+.recipe-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--panel);
+  color: var(--ink);
+  font-size: 1.1rem;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+.recipe-head {
+  --mc: var(--c-lunch);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 18px;
+  align-items: center;
+  padding: 24px 64px 20px 24px;
+  background: color-mix(in srgb, var(--mc) 16%, var(--panel));
+  border-bottom: 4px solid var(--mc);
+}
+
+.recipe-head.breakfast { --mc: var(--c-breakfast); }
+.recipe-head.lunch { --mc: var(--c-lunch); }
+.recipe-head.dinner { --mc: var(--c-dinner); }
+.recipe-head.snack { --mc: var(--c-snack); }
+
+.recipe-head h2 {
+  margin: 2px 0 10px;
+  font-size: clamp(1.4rem, 4vw, 2rem);
+  line-height: 1.1;
+}
+
+.recipe-head .meal-label {
+  margin: 0;
+}
+
+.plate.big {
+  width: 92px;
+  height: 92px;
+  font-size: 3rem;
+}
+
+.recipe-cols {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 24px;
+  padding: 18px 24px 0;
+}
+
+.recipe-cols h3 {
+  margin: 0 0 10px;
+  font-size: 1.1rem;
+}
+
+.recipe-cols h3 small {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.ing-list {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.ing-list li {
+  padding: 7px 10px;
+  border-radius: 10px;
+  background: var(--soft);
+}
+
+.ing-list b {
+  font-variant-numeric: tabular-nums;
+}
+
+.ing-list small {
+  color: var(--muted);
+}
+
+.chip.fit {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.step-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+  display: grid;
+  gap: 12px;
+}
+
+.step-list li {
+  counter-increment: step;
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.step-list li::before {
+  content: counter(step);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--lemon);
+  color: #3a2c00;
+  font-family: var(--font-display);
+  font-weight: 800;
+}
+
+.recipe-inner > .note {
+  padding: 0 24px;
+}
+
 /* ---------- Chart ---------- */
 .chart {
   background: var(--soft);
@@ -982,6 +1151,15 @@ button:focus-visible {
 .wcell .wicon {
   font-size: 1.15rem;
   text-align: center;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.wcell button.wicon:hover {
+  background: var(--soft);
 }
 
 .wcell select {
@@ -1400,6 +1578,23 @@ input[type='checkbox'] {
   }
   .meal-cards {
     grid-template-columns: 1fr;
+  }
+  .recipe-head {
+    grid-template-columns: 1fr;
+    padding: 20px 56px 16px 16px;
+    gap: 10px;
+  }
+  .plate.big {
+    width: 64px;
+    height: 64px;
+    font-size: 2.1rem;
+  }
+  .recipe-cols {
+    grid-template-columns: 1fr;
+    padding: 16px 16px 0;
+  }
+  .recipe-inner > .note {
+    padding: 0 16px;
   }
   .meal-card {
     grid-template-columns: 48px minmax(0, 1fr);

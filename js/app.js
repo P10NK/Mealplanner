@@ -4,6 +4,7 @@
 
   const D = window.MPData;
   const P = window.MPPlanner;
+  const STEPS = window.MPSteps || {};
   const STORAGE_KEY = 'mealplanner:v1';
   const OVERPASS_URLS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
   const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search';
@@ -303,14 +304,21 @@
             macroBar('carbs', 'Carbs', current.carbs),
             macroBar('fiber', 'Fiber', current.fiber)
           ),
-          h('div', { class: 'needs' }, needs.length ? `Needs: ${needs.join(', ')}` : 'No cooking needed'),
+          h(
+            'div',
+            { class: 'card-foot' },
+            h('span', { class: 'needs' }, needs.length ? `Needs: ${needs.join(', ')}` : 'No cooking needed'),
+            h('button', { type: 'button', class: 'btn small', onclick: () => openRecipe(current.id) }, '📖 View recipe')
+          ),
         ];
       }
 
       return h(
         'div',
         { class: `meal-card ${meal.id}` + (locked ? ' locked' : '') },
-        h('div', { class: 'plate' + (current ? '' : ' empty'), 'aria-hidden': 'true' }, current ? current.icon : meal.icon),
+        current
+          ? h('button', { type: 'button', class: 'plate', title: `Recipe for ${current.name}`, 'aria-label': `Open recipe for ${current.name}`, onclick: () => openRecipe(current.id) }, current.icon)
+          : h('div', { class: 'plate empty', 'aria-hidden': 'true' }, meal.icon),
         h(
           'div',
           { class: 'meal-main' },
@@ -428,12 +436,91 @@
               'label',
               { class: `wcell ${meal.id}` + (current && !P.fitsPrefs(current, state.prefs) ? ' misfit' : '') },
               h('b', null, meal.label),
-              h('span', { class: 'wrow' }, h('span', { class: 'wicon', 'aria-hidden': 'true' }, current ? current.icon : '·'), sel)
+              h(
+                'span',
+                { class: 'wrow' },
+                current
+                  ? h('button', { type: 'button', class: 'wicon', title: `Recipe for ${current.name}`, 'aria-label': `Open recipe for ${current.name}`, onclick: (e) => { e.preventDefault(); openRecipe(current.id); } }, current.icon)
+                  : h('span', { class: 'wicon', 'aria-hidden': 'true' }, '·'),
+                sel
+              )
             );
           })
         );
       })
     );
+  }
+
+  // ---------- Recipe view ----------
+
+  function openRecipe(id) {
+    const rec = P.getRecipe(id);
+    if (!rec) return;
+    const n = servings();
+    const meal = D.MEALS.find((m) => m.id === rec.meal);
+    const needs = rec.appliances.map((req) => req.split('|').map(applianceLabel).join(' or '));
+    const styles = D.STYLES.filter((s) => s.id !== 'balanced' && P.matchesStyle(rec, s.id));
+    const steps = STEPS[rec.id] || [];
+    const dlg = $('recipe-dialog');
+    $('recipe-body').replaceChildren(
+      h('button', { type: 'button', class: 'recipe-close', 'aria-label': 'Close recipe', onclick: () => closeRecipe() }, '✕'),
+      h(
+        'header',
+        { class: `recipe-head ${rec.meal}` },
+        h('div', { class: 'plate big', 'aria-hidden': 'true' }, rec.icon),
+        h(
+          'div',
+          null,
+          h('p', { class: 'meal-label' }, meal ? meal.label : ''),
+          h('h2', { id: 'recipe-title' }, rec.name),
+          h(
+            'div',
+            { class: 'chips' },
+            h('span', { class: 'chip' }, `⏱ ${rec.time} min`),
+            h('span', { class: 'chip' }, `🔥 ${rec.kcal} kcal`),
+            h('span', { class: 'chip' }, `${rec.protein}g protein`),
+            h('span', { class: 'chip' }, `${rec.carbs}g carbs`),
+            h('span', { class: 'chip' }, `${rec.fiber}g fiber`),
+            h('span', { class: 'chip cost' }, `${P.money(P.recipeCost(rec) * n)} for ${n}`)
+          )
+        )
+      ),
+      h(
+        'div',
+        { class: 'recipe-cols' },
+        h(
+          'section',
+          null,
+          h('h3', null, `Ingredients`, h('small', null, ` for ${n} ${n === 1 ? 'person' : 'people'}`)),
+          h(
+            'ul',
+            { class: 'ing-list' },
+            P.recipeIngredients(rec, n).map((l) => h('li', null, h('b', null, l.amount), ` ${l.name}`, l.staple ? h('small', null, ' (pantry)') : null))
+          ),
+          h('p', { class: 'needs' }, needs.length ? `You'll need: ${needs.join(', ')}` : 'No cooking needed'),
+          styles.length ? h('div', { class: 'chips' }, styles.map((s) => h('span', { class: 'chip fit' }, `${s.icon} ${s.label}`))) : null
+        ),
+        h(
+          'section',
+          null,
+          h('h3', null, 'Steps'),
+          h('ol', { class: 'step-list' }, steps.map((t) => h('li', null, t)))
+        )
+      ),
+      h('p', { class: 'note' }, 'Nutrition is per person. Amounts and cost scale with the number of people eating.')
+    );
+    if (typeof dlg.showModal === 'function') {
+      if (!dlg.open) dlg.showModal();
+    } else {
+      dlg.setAttribute('open', '');
+    }
+    dlg.querySelector('.recipe-close').focus();
+  }
+
+  function closeRecipe() {
+    const dlg = $('recipe-dialog');
+    if (typeof dlg.close === 'function') dlg.close();
+    else dlg.removeAttribute('open');
   }
 
   // ---------- Step 3: stores + shopping list ----------
@@ -817,6 +904,10 @@
       })
     );
     $('copy-list').addEventListener('click', copyList);
+    // Clicking the dimmed backdrop closes the recipe.
+    $('recipe-dialog').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) closeRecipe();
+    });
     $('print-list').addEventListener('click', () => window.print());
   }
 

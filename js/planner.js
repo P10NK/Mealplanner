@@ -303,6 +303,29 @@
     return `${text} ${plural ? labels[1] : labels[0]}`;
   }
 
+  // Recipe amounts: exact fractions, no rounding up to whole packages.
+  function formatAmount(qty, unit) {
+    let text;
+    if (unit === 'lb' || unit === 'oz') text = String(Math.round(qty * 100) / 100);
+    else text = fractionString(qty);
+    if (unit === 'each') return text;
+    const labels = UNIT_LABELS[unit] || [unit, unit];
+    const plural = parseFloat(text) > 1 || /\d \S/.test(text);
+    return `${text} ${plural ? labels[1] : labels[0]}`;
+  }
+
+  // Ingredient lines for one recipe, scaled to the household.
+  function recipeIngredients(recipe, servings) {
+    const n = Math.max(1, Number(servings) || 1);
+    return recipe.ingredients.map(([key, qty]) => {
+      const i = D.INGREDIENTS[key];
+      let name = i.name;
+      // "½ Onion", not "½ Onions"
+      if (i.unit === 'each' && qty * n <= 1) name = name.replace(/oes$/, 'o').replace(/s$/, '');
+      return { key, name, amount: formatAmount(qty * n, i.unit), staple: i.staple };
+    });
+  }
+
   function money(n) {
     return '$' + (Math.round(n * 100) / 100).toFixed(2);
   }
@@ -434,6 +457,8 @@
     weeklyCost,
     autofill,
     formatQty,
+    formatAmount,
+    recipeIngredients,
     money,
     haversineMiles,
     buildOverpassQuery,
