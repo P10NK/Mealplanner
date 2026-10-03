@@ -40,6 +40,7 @@
       honey: !!o.honey,
       heavy: !!o.heavy,
       staple: !!o.staple,
+      term: o.term || '',
     };
   }
 
@@ -173,7 +174,7 @@
     frozen_waffles: ing('Eggo waffles', FR, 'each', 0.35, { egg: true, gluten: true, dairy: true }),
     hot_pocket: ing('Hot Pockets', FR, 'each', 1.75, { meat: true, dairy: true, gluten: true, heavy: true }),
     frozen_burrito: ing('El Monterey bean & cheese burritos', FR, 'each', 1.0, { dairy: true, gluten: true, heavy: true }),
-    frozen_meal: ing('Lean Cuisine / Stouffer\'s frozen meals', FR, 'each', 3.25, { meat: true, dairy: true, gluten: true }),
+    frozen_meal: ing('Lean Cuisine / Stouffer\'s frozen meals', FR, 'each', 3.25, { meat: true, dairy: true, gluten: true, term: 'Lean Cuisine frozen meal' }),
     power_bowl: ing('Healthy Choice Power Bowls', FR, 'each', 3.5, { meat: true }),
     personal_pizza: ing('DiGiorno personal pizzas', FR, 'each', 3.5, { meat: true, dairy: true, gluten: true, heavy: true }),
     skillet_meal: ing('Birds Eye Voila! skillet meals, per serving', FR, 'each', 2.5, { meat: true, dairy: true, gluten: true }),

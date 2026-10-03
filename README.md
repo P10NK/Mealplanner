@@ -14,7 +14,26 @@ Your plan is saved in your browser (localStorage).
 
 ### About prices and stores
 
-Ingredient prices are estimates based on typical US supermarket prices (see `js/data.js`). Each store gets a price tier from its name: discount chains such as Aldi and Walmart are about 15% cheaper, premium stores such as Whole Foods about 25% more expensive, and everything else uses the standard price. The search covers supermarkets and produce markets. If the plan is over budget the app warns you but still builds the list. Free store data does not include live prices, so actual totals vary by store. Store locations come from [OpenStreetMap](https://www.openstreetmap.org/copyright) via the Overpass API, and addresses are looked up with Nominatim. Both are free and keyless.
+With the Kroger price server set up (below), stores in the Kroger family (Kroger, Ralphs, Fred Meyer, King Soopers, Harris Teeter, Smith's, Fry's, QFC, Mariano's, Dillons and others) show today's shelf prices from Kroger's official Product API, including sales. Once one is selected, meal prices, the budget meter and the shopping list use those prices, and the list shows the actual product, package size and how many packages to buy. A few items Kroger doesn't carry, or whose package size can't be converted (produce sold by the pound, for example), stay estimated and are marked that way.
+
+Every other store uses estimates based on typical US supermarket prices (see `js/data.js`), adjusted by a price tier guessed from its name: discount chains such as Aldi and Walmart about 15% cheaper, premium stores such as Whole Foods about 25% more expensive. Walmart, Target and Aldi have no open price feed. If the plan is over budget the app warns you but still builds the list. Store locations come from [OpenStreetMap](https://www.openstreetmap.org/copyright) via the Overpass API (addresses looked up with Nominatim) plus Kroger's Locations API.
+
+### Live Kroger prices
+
+Kroger's API needs a private key, so it can't be called straight from the web page. `worker/` holds a small [Cloudflare Worker](https://developers.cloudflare.com/workers/) (free plan is plenty) that keeps the key secret and hands prices to the site.
+
+1. Sign up at [developer.kroger.com](https://developer.kroger.com), create an application in the **Production** environment, and give it the **Products** and **Locations** APIs. Copy its client ID and client secret.
+2. Create a free Cloudflare account, then from the `worker/` folder run:
+   ```sh
+   npx wrangler login
+   npx wrangler deploy
+   npx wrangler secret put KROGER_CLIENT_ID      # paste the client ID
+   npx wrangler secret put KROGER_CLIENT_SECRET  # paste the client secret
+   ```
+   `deploy` prints the worker's address, such as `https://mealplanner-prices.<you>.workers.dev`.
+3. Put that address in `js/config.js` as `priceApi`, and optionally set `ALLOWED_ORIGIN` in `worker/wrangler.toml` to your site's address so only your site can use it.
+
+The keys only ever live in Cloudflare's secret store. Never put them in this repository. The worker caches each price for 6 hours; a store's full price lookup is about 250 Kroger requests, well inside Kroger's free daily limit for personal use.
 
 ## Running it
 
@@ -33,6 +52,8 @@ To publish it, turn on GitHub Pages (Settings → Pages → Deploy from branch �
 - `js/steps.js`: cooking steps for every recipe
 - `js/planner.js`: filtering, costs, auto-fill, shopping list, store search parsing (no DOM, unit tested)
 - `js/app.js`: UI wiring
+- `js/config.js`: the address of your Kroger price server, if you set one up
+- `worker/`: the Kroger price server (Cloudflare Worker)
 - `tests/`: unit tests, run with `npm test` (Node 18+)
 
 ## Adding recipes

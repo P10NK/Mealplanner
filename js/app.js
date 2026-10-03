@@ -8,6 +8,8 @@
   const STORAGE_KEY = 'mealplanner:v1';
   const OVERPASS_URLS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
   const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search';
+  const PRICE_API = String((window.MP_CONFIG || {}).priceApi || '').replace(/\/+$/, '');
+  const PRICE_MAX_AGE = 6 * 60 * 60 * 1000;
 
   const defaults = () => ({
     prefs: {
@@ -25,6 +27,7 @@
     assignments: {},
     checked: {},
     view: 'category',
+    livePrices: {}, // Kroger location id -> { at, prices }
   });
 
   let state = load();
@@ -456,8 +459,53 @@
 
   // ---------- Step 3: stores + shopping list ----------
 
+  // Stores carry their shelf prices once loaded, so totals can use them.
+  function withPrices(s) {
+    const lp = s.live && state.livePrices[s.krogerId];
+    return lp ? Object.assign({}, s, { prices: lp.prices }) : s;
+  }
+
   function selectedStores() {
-    return state.stores.filter((s) => state.selectedStores.includes(s.id));
+    return state.stores.filter((s) => state.selectedStores.includes(s.id)).map(withPrices);
+  }
+
+  // The first selected store with shelf prices sets meal prices everywhere.
+  function priceStore() {
+    return selectedStores().find((s) => s.prices) || null;
+  }
+
+  function applyLivePrices() {
+    const ps = priceStore();
+    P.setLivePrices(ps ? ps.prices : null);
+  }
+
+  const loadingPrices = new Set();
+
+  async function loadLivePrices(store, force) {
+    if (!PRICE_API || !store || !store.live) return;
+    const have = state.livePrices[store.krogerId];
+    if (!force && have && Date.now() - have.at < PRICE_MAX_AGE) return;
+    if (loadingPrices.has(store.krogerId)) return;
+    loadingPrices.add(store.krogerId);
+    renderStores();
+    try {
+      const items = Object.keys(D.INGREDIENTS).map((key) => ({ key, term: P.searchTerm(key) }));
+      const res = await fetch(`${PRICE_API}/prices`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ locationId: store.krogerId, items }),
+      });
+      if (!res.ok) throw new Error(`Price server error (${res.status})`);
+      const json = await res.json();
+      state.livePrices[store.krogerId] = { at: Date.now(), prices: json.prices || {} };
+      loadingPrices.delete(store.krogerId);
+      update();
+      toast(`Prices now come from ${store.name}`);
+    } catch (e) {
+      loadingPrices.delete(store.krogerId);
+      renderStores();
+      toast(`Couldn't get prices from ${store.name}. Showing estimates.`);
+    }
   }
 
   function renderShop() {
@@ -482,11 +530,15 @@
   function renderStores() {
     const list = $('store-list');
     const items = P.buildShoppingList(state.plan, servings());
-    const totals = state.stores.map((s) => P.storeTotal(items, s));
+    const stores = state.stores.map(withPrices);
+    const breakdowns = stores.map((s) => P.storeBreakdown(items, s));
+    const totals = breakdowns.map((b) => b.total);
     const cheapest = totals.length ? Math.min(...totals) : 0;
     list.replaceChildren(
-      ...state.stores.map((s, i) => {
+      ...stores.map((s, i) => {
         const on = state.selectedStores.includes(s.id);
+        const b = breakdowns[i];
+        const loading = loadingPrices.has(s.krogerId);
         const tier = D.STORE_TIERS[s.tier || 'standard'];
         const dir = `https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lon}`;
         return h(
@@ -505,10 +557,17 @@
             h(
               'div',
               null,
-              h('span', { class: `pill ${s.tier || 'standard'}` }, `${tier.label} prices`),
+              s.prices
+                ? h('span', { class: 'pill live' }, 'Shelf prices')
+                : loading
+                  ? h('span', { class: 'pill live' }, 'Getting prices…')
+                  : h('span', { class: `pill ${s.tier || 'standard'}` }, s.live && PRICE_API ? 'Select for shelf prices' : `${tier.label} prices (est.)`),
               totals[i] === cheapest && state.stores.length > 1 ? h('span', { class: 'pill cheapest' }, 'Cheapest') : null
             ),
-            h('div', { class: 'store-total' }, P.money(totals[i]), h('small', null, ' for the whole list')),
+            h('div', { class: 'store-total' }, P.money(totals[i]), h('small', null, s.prices ? ' for the whole list' : ' estimated')),
+            s.prices && b.priced < b.count
+              ? h('div', { class: 'store-meta' }, `${b.priced} of ${b.count} items at shelf price, the rest estimated`)
+              : null,
             h('div', { class: 'store-meta' }, `${s.type} · ${s.distance.toFixed(1)} mi away`),
             s.address ? h('div', { class: 'store-meta' }, s.address) : null,
             h('a', { href: dir, target: '_blank', rel: 'noopener', class: 'store-meta' }, 'Directions')
@@ -528,9 +587,8 @@
       });
     }
     state.selectedStores = state.stores.filter((s) => set.has(s.id)).map((s) => s.id);
-    save();
-    renderStores();
-    renderList();
+    update();
+    if (on) loadLivePrices(state.stores.find((s) => s.id === id));
   }
 
   function storeSelect(value, label, onchange) {
@@ -548,8 +606,9 @@
     const total = P.listTotal(items);
     const remaining = P.listTotal(items, state.checked);
     const budget = Number(state.prefs.budget) || 0;
+    const ps = priceStore();
     $('list-total').textContent =
-      `Estimated total ${P.money(total)} at standard prices` +
+      (ps ? `Total ${P.money(total)} at ${ps.name}` : `Estimated total ${P.money(total)} at standard prices`) +
       (budget ? ` (budget ${P.money(budget)})` : '') +
       (remaining !== total ? ` · ${P.money(remaining)} left to buy` : '');
     const over = budget > 0 && total > budget;
@@ -623,12 +682,29 @@
                   renderList();
                 },
               }),
-              h(
-                'div',
-                { class: 'item-name' },
-                it.name,
-                h('small', null, P.formatQty(it.buyQty, it.unit) + (it.staple ? ' · pantry staple, check if you have it' : ''))
-              ),
+              it.live
+                ? h(
+                    'div',
+                    { class: 'item-name' },
+                    it.live.description,
+                    h(
+                      'small',
+                      null,
+                      `${it.live.packs} × ${it.live.size || 'pack'} · ${P.money(it.live.price)} each` +
+                        (it.live.onSale ? ' · on sale' : '') +
+                        (it.staple ? ' · pantry staple, check if you have it' : '')
+                    )
+                  )
+                : h(
+                    'div',
+                    { class: 'item-name' },
+                    it.name,
+                    h(
+                      'small',
+                      null,
+                      P.formatQty(it.buyQty, it.unit) + (ps ? ' · estimated' : '') + (it.staple ? ' · pantry staple, check if you have it' : '')
+                    )
+                  ),
               h('div', { class: 'item-cost' }, P.money(it.cost)),
               stores.length &&
               storeSelect(state.assignments[it.key], `Store for ${it.name}`, (e) => {
@@ -679,6 +755,14 @@
     throw lastErr || new Error('Store search failed');
   }
 
+  async function fetchKrogerStores(lat, lon, radius) {
+    if (!PRICE_API) return [];
+    const res = await fetch(`${PRICE_API}/locations?lat=${lat}&lon=${lon}&radius=${radius}`);
+    if (!res.ok) throw new Error('Kroger store search failed');
+    const json = await res.json();
+    return P.shapeKrogerStores(json.stores, lat, lon).filter((s) => s.distance <= radius * 1.02);
+  }
+
   async function searchStores(coords) {
     const radius = Number($('radius').value) || 5;
     state.radius = radius;
@@ -694,9 +778,24 @@
         state.location = q;
         point = await geocode(q);
       }
-      const stores = (await fetchStores(point.lat, point.lon, radius)).slice(0, 60);
+      const [mapRes, krogerRes] = await Promise.allSettled([
+        fetchStores(point.lat, point.lon, radius),
+        fetchKrogerStores(point.lat, point.lon, radius),
+      ]);
+      if (mapRes.status === 'rejected' && !(krogerRes.value || []).length) throw mapRes.reason;
+      const kroger = krogerRes.value || [];
+      // Kroger's own listing replaces the map's copy of the same store.
+      const letters = (t) => String(t || '').toLowerCase().replace(/[^a-z]/g, '');
+      const sameStore = (s, k) =>
+        P.haversineMiles(s.lat, s.lon, k.lat, k.lon) < 0.15 &&
+        [k.brand, k.name.split(' ')[0]].some((c) => letters(c).length > 2 && letters(s.name).includes(letters(c)));
+      const mapStores = (mapRes.value || []).filter((s) => !kroger.some((k) => sameStore(s, k)));
+      const stores = mapStores.concat(kroger).sort((a, b) => a.distance - b.distance).slice(0, 60);
       state.stores = stores;
-      state.selectedStores = stores.slice(0, 3).map((s) => s.id);
+      const pick = stores.slice(0, 3);
+      const nearestLive = stores.find((s) => s.live);
+      if (nearestLive && !pick.includes(nearestLive)) pick[Math.min(2, pick.length - 1)] = nearestLive;
+      state.selectedStores = pick.map((s) => s.id);
       state.assignments = {};
       save();
       setStatus(
@@ -705,8 +804,8 @@
           : `No grocery stores found within ${radius} mi. Try a bigger radius.`,
         !stores.length
       );
-      renderStores();
-      renderList();
+      update();
+      loadLivePrices(nearestLive);
     } catch (e) {
       const msg =
         e instanceof TypeError || /Store search failed/.test(e.message)
@@ -760,6 +859,7 @@
   // ---------- wiring ----------
 
   function update() {
+    applyLivePrices();
     save();
     renderBudget();
     renderTabs();

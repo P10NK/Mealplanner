@@ -1235,6 +1235,7 @@ dialog.recipe::backdrop {
 .pill.standard { background: var(--soft); color: var(--muted); }
 .pill.premium { background: var(--plum-soft); color: var(--plum); }
 .pill.cheapest { background: var(--lemon); color: #3a2c00; }
+.pill.live { background: var(--accent); color: #fff; }
 
 .list-head {
   display: flex;
