@@ -237,6 +237,49 @@
     cheese_puffs: ing('Cheetos Puffs, single-serve bags', RE, 'each', 0.6, { dairy: true }),
     ice_cream_sandwich: ing('Klondike ice cream sandwiches', FR, 'each', 0.6, { dairy: true, gluten: true }),
     pretzels: ing('Snyder\'s pretzels, single-serve bags', RE, 'each', 0.5, { gluten: true }),
+
+    // More everyday picks
+    toaster_strudel: ing('Pillsbury Toaster Strudel', FR, 'each', 0.6, { gluten: true, egg: true, dairy: true }),
+    nutrigrain: ing('Kellogg\'s Nutri-Grain bars', RE, 'each', 0.45, { gluten: true }),
+    breakfast_bowl: ing('Jimmy Dean breakfast bowls', FR, 'each', 2.75, { meat: true, egg: true, dairy: true }),
+    kodiak_cup: ing('Kodiak oatmeal cups', RE, 'each', 1.75, { gluten: true }),
+    honey_bun: ing('Little Debbie honey buns', RE, 'each', 0.45, { gluten: true, egg: true, dairy: true }),
+    frosted_flakes: ing('Kellogg\'s Frosted Flakes', CD, 'cup', 0.3, { gluten: true }),
+    bagel_bites: ing('Bagel Bites mini pizzas', FR, 'each', 0.25, { meat: true, dairy: true, gluten: true }),
+    party_pizza: ing('Totino\'s Party Pizza', FR, 'each', 2.0, { meat: true, dairy: true, gluten: true }),
+    banquet_meal: ing('Banquet frozen meals', FR, 'each', 1.5, { meat: true, dairy: true, gluten: true }),
+    spaghettios: ing('Campbell\'s SpaghettiOs', CD, 'can', 1.25, { gluten: true }),
+    tuna_kit: ing('StarKist tuna salad kits with crackers', RE, 'each', 1.75, { fish: true, gluten: true, egg: true }),
+    stouffers_mac: ing('Stouffer\'s mac & cheese, single serve', FR, 'each', 3.0, { dairy: true, gluten: true }),
+    pf_changs: ing('P.F. Chang\'s Home Menu frozen meals, per serving', FR, 'each', 4.0, { meat: true, gluten: true }),
+    wings: ing('Tyson buffalo chicken wings, per serving', FR, 'each', 2.5, { meat: true }),
+    mashed_potatoes: ing('Bob Evans mashed potatoes', DE, 'cup', 1.2, { dairy: true }),
+    doritos: ing('Doritos Nacho Cheese, single-serve bags', RE, 'each', 0.6, { dairy: true }),
+    pringles: ing('Pringles Snack Stacks', RE, 'each', 0.6),
+    babybel: ing('Mini Babybel cheese', DE, 'each', 0.5, { dairy: true }),
+    chips_ahoy: ing('Chips Ahoy! cookie snack packs', RE, 'each', 0.6, { gluten: true }),
+    fruit_snacks: ing('Welch\'s Fruit Snacks pouches', RE, 'each', 0.3),
+    kind_bar: ing('KIND bars', RE, 'each', 1.5, { honey: true }),
+    reeses: ing('Reese\'s Peanut Butter Cups', RE, 'each', 1.25, { dairy: true }),
+    cheez_it: ing('Cheez-It snack packs', RE, 'each', 0.5, { dairy: true, gluten: true }),
+    slim_jim: ing('Slim Jim meat sticks', RE, 'each', 1.25, { meat: true }),
+    gogurt: ing('Yoplait Go-GURT tubes', DE, 'each', 0.4, { dairy: true }),
+
+    // Pantry and fridge basics for easy home cooking
+    jelly: ing('Smucker\'s grape jelly', OC, 'tbsp', 0.07),
+    american_cheese: ing('Kraft Singles American cheese', DE, 'slice', 0.25, { dairy: true }),
+    deli_ham: ing('Oscar Mayer deli ham', M, 'oz', 0.5, { meat: true }),
+    hot_dog_buns: ing('Ball Park hot dog buns', BG, 'each', 0.3, { gluten: true }),
+    burger_buns: ing('Ball Park hamburger buns', BG, 'each', 0.35, { gluten: true }),
+    ketchup: ing('Heinz ketchup', OC, 'tbsp', 0.05, { staple: true }),
+    hamburger_helper: ing('Hamburger Helper Cheeseburger Macaroni', CD, 'each', 1.75, { dairy: true, gluten: true }),
+    taco_kit: ing('Old El Paso taco dinner kit', CD, 'each', 3.5, { gluten: true }),
+    manwich: ing('Manwich sloppy joe sauce', CD, 'can', 1.5),
+    shake_bake: ing('Shake \'n Bake chicken coating', CD, 'each', 1.5, { gluten: true }),
+    meatballs: ing('Cooked Perfect frozen meatballs', FR, 'each', 0.25, { meat: true, dairy: true, gluten: true, egg: true }),
+    bisquick: ing('Bisquick pancake mix', BG, 'cup', 0.5, { gluten: true }),
+    tortilla_chips: ing('Tostitos tortilla chips', NS, 'oz', 0.25),
+    queso: ing('Tostitos queso dip', OC, 'tbsp', 0.15, { dairy: true }),
   };
 
   const APPLIANCES = [
@@ -563,6 +606,58 @@
     r('rs-cheese-puffs', 'Cheetos Puffs', 'snack', 1, [], [['cheese_puffs', 1]], [160, 2, 15, 0], READY),
     r('rs-ice-cream-sandwich', 'Klondike ice cream sandwich', 'snack', 1, [], [['ice_cream_sandwich', 1]], [170, 3, 27, 1], READY),
     r('rs-pretzels', 'Snyder\'s pretzels', 'snack', 1, [], [['pretzels', 1]], [110, 3, 23, 1], READY),
+
+    // More grab-and-go
+    r('rb-toaster-strudel', 'Pillsbury Toaster Strudel', 'breakfast', 4, ['toaster|oven|airfryer'], [['toaster_strudel', 2]], [380, 6, 52, 1], READY),
+    r('rb-nutrigrain', 'Nutri-Grain bar & a banana', 'breakfast', 1, [], [['nutrigrain', 1], ['banana', 1]], [235, 3, 51, 4], READY),
+    r('rb-breakfast-bowl', 'Jimmy Dean breakfast bowl', 'breakfast', 3, ['microwave'], [['breakfast_bowl', 1]], [400, 20, 16, 2], READY),
+    r('rb-kodiak-cup', 'Kodiak oatmeal cup', 'breakfast', 2, ['microwave'], [['kodiak_cup', 1]], [260, 14, 40, 4], READY),
+    r('rb-honey-bun', 'Little Debbie honey bun', 'breakfast', 1, [], [['honey_bun', 1]], [230, 2, 28, 1], READY),
+    r('rb-frosted-flakes', 'Frosted Flakes & milk', 'breakfast', 2, [], [['frosted_flakes', 1.5], ['milk', 1]], [300, 10, 56, 1], READY),
+
+    r('rl-bagel-bites', 'Bagel Bites', 'lunch', 12, ['airfryer|oven|microwave'], [['bagel_bites', 9]], [430, 16, 56, 3], READY),
+    r('rl-party-pizza', 'Totino\'s Party Pizza', 'lunch', 15, ['oven|airfryer'], [['party_pizza', 1]], [720, 24, 74, 4], READY),
+    r('rl-banquet', 'Banquet frozen meal', 'lunch', 5, ['microwave'], [['banquet_meal', 1]], [330, 12, 40, 4], READY),
+    r('rl-spaghettios', 'Campbell\'s SpaghettiOs', 'lunch', 3, ['microwave|stovetop'], [['spaghettios', 1]], [340, 12, 66, 6], READY),
+    r('rl-tuna-kit', 'StarKist tuna salad kit & an apple', 'lunch', 1, [], [['tuna_kit', 1], ['apple', 1]], [325, 15, 43, 5], READY),
+    r('rl-uncrustables-chips', 'Uncrustables & Lay\'s chips', 'lunch', 1, [], [['uncrustables', 2], ['chips', 1]], [580, 14, 67, 5], READY),
+
+    r('rd-stouffers-mac', 'Stouffer\'s mac & cheese', 'dinner', 8, ['microwave|oven'], [['stouffers_mac', 1]], [500, 20, 48, 2], READY),
+    r('rd-pf-changs', 'P.F. Chang\'s Home Menu meal', 'dinner', 12, ['stovetop|microwave'], [['pf_changs', 1]], [520, 24, 64, 3], READY),
+    r('rd-wings', 'Tyson buffalo wings & Ore-Ida fries', 'dinner', 20, ['airfryer|oven'], [['wings', 1], ['frozen_fries', 1]], [600, 30, 40, 3], READY),
+    r('rd-rotisserie-mash', 'Rotisserie chicken & Bob Evans mashed potatoes', 'dinner', 5, ['microwave'], [['rotisserie_chicken', 0.25], ['mashed_potatoes', 1]], [520, 42, 25, 2], READY),
+
+    r('rs-doritos', 'Doritos', 'snack', 1, [], [['doritos', 1]], [150, 2, 18, 1], READY),
+    r('rs-pringles', 'Pringles', 'snack', 1, [], [['pringles', 1]], [140, 1, 15, 1], READY),
+    r('rs-babybel', 'Mini Babybel cheese', 'snack', 1, [], [['babybel', 2]], [140, 10, 0, 0], READY),
+    r('rs-chips-ahoy', 'Chips Ahoy! cookies', 'snack', 1, [], [['chips_ahoy', 1]], [140, 1, 20, 1], READY),
+    r('rs-fruit-snacks', 'Welch\'s Fruit Snacks', 'snack', 1, [], [['fruit_snacks', 1]], [80, 1, 19, 0], READY),
+    r('rs-kind-bar', 'KIND bar', 'snack', 1, [], [['kind_bar', 1]], [200, 6, 16, 3], READY),
+    r('rs-reeses', 'Reese\'s Peanut Butter Cups', 'snack', 1, [], [['reeses', 1]], [210, 5, 24, 1], READY),
+    r('rs-cheez-it', 'Cheez-It', 'snack', 1, [], [['cheez_it', 1]], [150, 3, 18, 1], READY),
+    r('rs-slim-jim', 'Slim Jim', 'snack', 1, [], [['slim_jim', 1]], [150, 6, 3, 0], READY),
+    r('rs-gogurt', 'Go-GURT yogurt tubes', 'snack', 1, [], [['gogurt', 2]], [100, 4, 18, 0], READY),
+
+    // Easy home cooking, the everyday way
+    r('b-eggs-toast', 'Scrambled eggs & buttered toast', 'breakfast', 8, ['stovetop|microwave', 'toaster|oven'], [['eggs', 2], ['bread', 2], ['butter', 1]], [370, 17, 26, 2]),
+    r('b-bacon-eggs', 'Bacon, eggs & toast', 'breakfast', 15, ['stovetop', 'toaster|oven'], [['bacon', 3], ['eggs', 2], ['bread', 2], ['butter', 1]], [500, 26, 26, 2]),
+    r('b-french-toast', 'French toast with syrup', 'breakfast', 12, ['stovetop'], [['bread', 3], ['eggs', 2], ['milk', 0.25], ['butter', 1], ['pancake_syrup', 2]], [520, 20, 70, 2]),
+    r('b-bisquick-pancakes', 'Bisquick pancakes', 'breakfast', 15, ['stovetop'], [['bisquick', 0.75], ['eggs', 1], ['milk', 0.5], ['pancake_syrup', 2]], [530, 14, 88, 2]),
+
+    r('l-pbj', 'PB&J sandwich & chips', 'lunch', 3, [], [['bread', 2], ['peanut_butter', 2], ['jelly', 1], ['chips', 1]], [550, 15, 62, 5]),
+    r('l-grilled-cheese', 'Grilled cheese & chips', 'lunch', 8, ['stovetop'], [['bread', 2], ['american_cheese', 2], ['butter', 1], ['chips', 1]], [560, 18, 45, 2]),
+    r('l-ham-sandwich', 'Ham & cheese sandwich', 'lunch', 3, [], [['bread', 2], ['deli_ham', 3], ['american_cheese', 1], ['mayo', 1]], [380, 22, 30, 1]),
+    r('l-blt', 'BLT sandwich', 'lunch', 12, ['stovetop|microwave|oven'], [['bacon', 3], ['bread', 2], ['tomato', 0.5], ['mixed_greens', 0.25], ['mayo', 1]], [450, 16, 30, 2]),
+    r('l-hot-dogs', 'Hot dogs on buns', 'lunch', 6, ['stovetop|microwave|grill'], [['hot_dogs', 2], ['hot_dog_buns', 2], ['ketchup', 1], ['mustard', 1]], [420, 14, 44, 2]),
+
+    r('d-hamburger-helper', 'Hamburger Helper cheeseburger macaroni', 'dinner', 20, ['stovetop'], [['hamburger_helper', 0.25], ['ground_beef', 0.25], ['milk', 0.25]], [560, 30, 40, 1]),
+    r('d-taco-night', 'Old El Paso beef tacos', 'dinner', 15, ['stovetop'], [['taco_kit', 0.33], ['ground_beef', 0.25], ['cheddar', 0.25]], [560, 30, 32, 3]),
+    r('d-sloppy-joes', 'Manwich sloppy joes', 'dinner', 15, ['stovetop'], [['manwich', 0.25], ['ground_beef', 0.25], ['burger_buns', 1]], [500, 28, 40, 2]),
+    r('d-cheeseburgers', 'Cheeseburgers', 'dinner', 15, ['grill|stovetop'], [['ground_beef', 0.33], ['burger_buns', 1], ['american_cheese', 1], ['ketchup', 1], ['mustard', 1]], [600, 34, 30, 1]),
+    r('d-shake-bake', 'Shake \'n Bake chicken & mashed potatoes', 'dinner', 30, ['oven|airfryer', 'microwave'], [['shake_bake', 0.25], ['chicken_breast', 0.4], ['mashed_potatoes', 1]], [520, 48, 34, 2]),
+    r('d-meatball-spaghetti', 'Spaghetti & meatballs', 'dinner', 15, ['stovetop'], [['pasta', 3], ['marinara', 0.5], ['meatballs', 5]], [650, 30, 80, 5]),
+
+    r('s-nachos', 'Tostitos chips & queso', 'snack', 2, ['microwave'], [['tortilla_chips', 1.5], ['queso', 2]], [260, 4, 30, 2]),
   ];
 
 
@@ -668,6 +763,16 @@
     'rs-chips': '🥔', 'rs-goldfish': '🐠', 'rs-cookies': '🍪', 'rs-popcorn': '🍿', 'rs-candy-bar': '🍫',
     'rs-pudding': '🍮', 'rs-krispies': '🍘', 'rs-snack-cake': '🍰', 'rs-cheese-puffs': '🧀',
     'rs-ice-cream-sandwich': '🍦', 'rs-pretzels': '🥨',
+
+    'rb-toaster-strudel': '🥐', 'rb-nutrigrain': '🍓', 'rb-breakfast-bowl': '🍳', 'rb-kodiak-cup': '🥣', 'rb-honey-bun': '🍯',
+    'rb-frosted-flakes': '🥣', 'rl-bagel-bites': '🍕', 'rl-party-pizza': '🍕', 'rl-banquet': '🍱', 'rl-spaghettios': '🥫',
+    'rl-tuna-kit': '🐟', 'rl-uncrustables-chips': '🥪', 'rd-stouffers-mac': '🧀', 'rd-pf-changs': '🥡', 'rd-wings': '🍗',
+    'rd-rotisserie-mash': '🍗', 'rs-doritos': '🔺', 'rs-pringles': '🥔', 'rs-babybel': '🧀', 'rs-chips-ahoy': '🍪',
+    'rs-fruit-snacks': '🍬', 'rs-kind-bar': '🥜', 'rs-reeses': '🥜', 'rs-cheez-it': '🧀', 'rs-slim-jim': '🥩', 'rs-gogurt': '🥛',
+    'b-eggs-toast': '🍳', 'b-bacon-eggs': '🥓', 'b-french-toast': '🍞', 'b-bisquick-pancakes': '🥞',
+    'l-pbj': '🥪', 'l-grilled-cheese': '🧀', 'l-ham-sandwich': '🥪', 'l-blt': '🥓', 'l-hot-dogs': '🌭',
+    'd-hamburger-helper': '🍝', 'd-taco-night': '🌮', 'd-sloppy-joes': '🍔', 'd-cheeseburgers': '🍔', 'd-shake-bake': '🍗',
+    'd-meatball-spaghetti': '🍝', 's-nachos': '🧀',
   };
   RECIPES.forEach((rec) => {
     rec.icon = RECIPE_ICONS[rec.id] || '🍽️';
