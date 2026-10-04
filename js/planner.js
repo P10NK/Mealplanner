@@ -66,7 +66,7 @@
   }
 
   // Rough ounces per cup for things sold by weight but used by the cup.
-  const OZ_PER_CUP = { cheddar: 4, mozzarella: 4, oats: 3, rice: 6.5, quinoa: 6, cereal: 1.3, frozen_fries: 3, frozen_veg: 5, frozen_berries: 5, spinach: 1, granola: 4 };
+  const OZ_PER_CUP = { cheddar: 4, mozzarella: 4, oats: 3, rice: 6.5, quinoa: 6, cereal: 1.3, frosted_flakes: 1.3, bisquick: 4.5, frozen_fries: 3, frozen_veg: 5, frozen_berries: 5, spinach: 1, granola: 4 };
 
   // How many of our recipe units one package holds, or null when we can't tell.
   function unitsPerPack(key, product) {
